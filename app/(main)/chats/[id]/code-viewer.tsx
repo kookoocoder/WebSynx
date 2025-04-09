@@ -1,17 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import ChevronLeftIcon from "@/components/icons/chevron-left";
 import ChevronRightIcon from "@/components/icons/chevron-right";
 import CloseIcon from "@/components/icons/close-icon";
 import RefreshIcon from "@/components/icons/refresh";
 import { extractFirstCodeBlock, splitByFirstCodeFence } from "@/lib/utils";
-import { useState } from "react";
 import type { Chat, Message } from "./page";
 import { Share } from "./share";
 import { StickToBottom } from "use-stick-to-bottom";
 import dynamic from "next/dynamic";
-import { Code, Eye, X, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Code, Eye, X, RefreshCw, ChevronLeft, ChevronRight, Copy, Check } from "lucide-react";
 
 const CodeRunner = dynamic(() => import("@/components/code-runner"), {
   ssr: false,
@@ -75,6 +74,22 @@ export default function CodeViewer({
       : undefined;
 
   const [refresh, setRefresh] = useState(0);
+  const [isCopied, setIsCopied] = useState(false);
+  
+  // Function to copy code to clipboard
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setIsCopied(true);
+      
+      // Reset copied state after 2 seconds
+      setTimeout(() => {
+        setIsCopied(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
 
   return (
     <>
@@ -96,21 +111,43 @@ export default function CodeViewer({
           </div>
         </div>
         {layout === "tabbed" && (
-          <div className="rounded-lg border border-purple-700/20 bg-gray-800/40 p-1">
-            <button
-              onClick={() => onTabChange("code")}
-              data-active={activeTab === "code" ? true : undefined}
-              className="inline-flex h-7 w-16 items-center justify-center rounded text-xs font-medium transition-colors data-[active]:bg-gradient-to-r data-[active]:from-purple-700 data-[active]:via-pink-600 data-[active]:to-indigo-700 data-[active]:text-white hover:bg-gray-700/50"
-            >
-              Code
-            </button>
-            <button
-              onClick={() => onTabChange("preview")}
-              data-active={activeTab === "preview" ? true : undefined}
-              className="inline-flex h-7 w-16 items-center justify-center rounded text-xs font-medium transition-colors data-[active]:bg-gradient-to-r data-[active]:from-purple-700 data-[active]:via-pink-600 data-[active]:to-indigo-700 data-[active]:text-white hover:bg-gray-700/50"
-            >
-              Preview
-            </button>
+          <div className="flex items-center gap-2">
+            {activeTab === "code" && (
+              <button
+                onClick={copyToClipboard}
+                className={`inline-flex h-7 px-2.5 items-center justify-center gap-1.5 rounded border border-purple-700/20 bg-gray-800/40 text-xs font-medium text-gray-300 transition-all hover:bg-gray-700/50 hover:text-white ${isCopied ? 'border-green-500/30 bg-green-500/10' : ''}`}
+                aria-label="Copy code to clipboard"
+              >
+                {isCopied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-green-400 animate-in fade-in zoom-in-50 duration-300" />
+                    <span className="animate-in fade-in slide-in-from-left-1 duration-300">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            )}
+            
+            <div className="rounded-lg border border-purple-700/20 bg-gray-800/40 p-1">
+              <button
+                onClick={() => onTabChange("code")}
+                data-active={activeTab === "code" ? true : undefined}
+                className="inline-flex h-7 w-16 items-center justify-center rounded text-xs font-medium transition-colors data-[active]:bg-gradient-to-r data-[active]:from-purple-700 data-[active]:via-pink-600 data-[active]:to-indigo-700 data-[active]:text-white hover:bg-gray-700/50"
+              >
+                Code
+              </button>
+              <button
+                onClick={() => onTabChange("preview")}
+                data-active={activeTab === "preview" ? true : undefined}
+                className="inline-flex h-7 w-16 items-center justify-center rounded text-xs font-medium transition-colors data-[active]:bg-gradient-to-r data-[active]:from-purple-700 data-[active]:via-pink-600 data-[active]:to-indigo-700 data-[active]:text-white hover:bg-gray-700/50"
+              >
+                Preview
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -144,7 +181,26 @@ export default function CodeViewer({
         </div>
       ) : (
         <div className="flex grow flex-col bg-gray-900">
-          <div className="h-1/2 overflow-y-auto scrollbar-hide">
+          <div className="h-1/2 overflow-y-auto scrollbar-hide relative">
+            <div className="absolute top-2 right-2 z-10">
+              <button
+                onClick={copyToClipboard}
+                className={`inline-flex items-center justify-center gap-1.5 rounded border border-purple-700/20 bg-gray-800/80 backdrop-blur-sm px-2 py-1 text-xs font-medium text-gray-300 transition-all hover:bg-gray-700/50 hover:text-white ${isCopied ? 'border-green-500/30 bg-green-500/10' : ''}`}
+                aria-label="Copy code to clipboard"
+              >
+                {isCopied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-green-400 animate-in fade-in zoom-in-50 duration-300" />
+                    <span className="animate-in fade-in slide-in-from-left-1 duration-300">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            </div>
             <SyntaxHighlighter code={code} language={language} />
           </div>
           <div className="flex h-1/2 flex-col">

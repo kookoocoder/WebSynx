@@ -6,7 +6,13 @@ import { splitByFirstCodeFence } from "@/lib/utils";
 import { Fragment } from "react";
 import Markdown from "react-markdown";
 import { StickToBottom } from "use-stick-to-bottom";
-import { Code, Eye } from "lucide-react";
+import { Code, Eye, Image as ImageIcon } from "lucide-react";
+import * as Tooltip from '@radix-ui/react-tooltip';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+
+// Regex to find markdown image links like [Image](url)
+const imageLinkRegex = /\n\n\[Image\]\(([^)]+)\)/g;
 
 export default function ChatLog({
   chat,
@@ -27,7 +33,7 @@ export default function ChatLog({
       resize="smooth"
       initial="smooth"
     >
-      <StickToBottom.Content className="mx-auto flex w-full max-w-prose flex-col gap-4 px-4 py-2 scrollbar-hide">
+      <StickToBottom.Content className="mx-auto flex w-full max-w-prose flex-col gap-4 px-4 py-2 scrollbar-hide ml-[60px]">
         <UserMessage content={chat.prompt} />
 
         {chat.messages.slice(2).map((message) => (
@@ -61,11 +67,27 @@ export default function ChatLog({
 }
 
 function UserMessage({ content }: { content: string }) {
+  // Extract image URLs and the remaining text
+  const images: string[] = [];
+  const textContent = content.replace(imageLinkRegex, (_, url) => {
+    images.push(url);
+    return ""; // Remove the image link from the main text
+  }).trim();
+
   return (
-    <div className="relative inline-flex max-w-[80%] items-end gap-3 self-end">
-      <div className="whitespace-pre-wrap rounded-xl bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 px-4 py-3 text-white shadow-md">
-        {content}
-      </div>
+    <div className="relative inline-flex flex-col gap-2 max-w-[80%] items-end self-end">
+      {images.length > 0 && (
+        <div className="flex flex-wrap gap-2 justify-end">
+          {images.map((url, index) => (
+            <ImagePreview key={index} url={url} />
+          ))}
+        </div>
+      )}
+      {textContent && (
+        <div className="whitespace-pre-wrap rounded-xl bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 px-4 py-3 text-white shadow-md">
+          {textContent}
+        </div>
+      )}
     </div>
   );
 }
@@ -91,7 +113,7 @@ function AssistantMessage({
         <div key={i}>
           {part.type === "text" ? (
             <div className="rounded-xl bg-gray-800/40 backdrop-blur-[1px] border border-gray-700/60 px-4 py-3 text-gray-200">
-              <Markdown className="prose prose-invert prose-gray max-w-none prose-headings:text-gray-200 prose-p:text-gray-300 prose-a:text-purple-400">
+              <Markdown className="prose prose-invert prose-gray max-w-none prose-headings:text-gray-200 prose-p:text-gray-300 prose-a:text-purple-400" remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                 {part.content}
               </Markdown>
             </div>
@@ -114,11 +136,7 @@ function AssistantMessage({
           ) : message ? (
             <div className="my-4">
               <button
-                className={`${
-                  isActive 
-                    ? "bg-gray-800/70 border-purple-500/50" 
-                    : "bg-gray-800/40 hover:bg-gray-800/60 hover:border-gray-600"
-                } inline-flex w-full items-center gap-3 rounded-xl border border-gray-700 backdrop-blur-[1px] p-3 transition-colors`}
+                className={`${isActive ? "bg-gray-800/70 border-purple-500/50" : "bg-gray-800/40 hover:bg-gray-800/60 hover:border-gray-600"} inline-flex w-full items-center gap-3 rounded-xl border border-gray-700 backdrop-blur-[1px] p-3 transition-colors`}
                 onClick={() => onMessageClick(message)}
               >
                 <div className="flex size-8 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400">
@@ -142,6 +160,7 @@ function AssistantMessage({
               </button>
             </div>
           ) : (
+            // Fallback for streamText or when message is undefined
             <div className="my-4">
               <button
                 className="inline-flex w-full items-center gap-3 rounded-xl border border-gray-700 bg-gray-800/50 backdrop-blur-[1px] p-3"
@@ -175,11 +194,47 @@ function AssistantMessage({
 }
 
 export function toTitleCase(rawName: string): string {
-  // Split on one or more hyphens or underscores
   const parts = rawName.split(/[-_]+/);
-
-  // Capitalize each part and join them back with spaces
   return parts
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(" ");
+}
+
+// New ImagePreview component
+function ImagePreview({ url }: { url: string }) {
+  return (
+    <Tooltip.Provider delayDuration={100}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          <a 
+            href={url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-block rounded border border-purple-400/30 p-1 bg-purple-900/30 hover:border-purple-400/50 transition-all"
+          >
+            <img 
+              src={url} 
+              alt="Uploaded preview" 
+              className="h-10 w-10 object-cover rounded-sm"
+            />
+          </a>
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content 
+            sideOffset={5}
+            className="z-50 rounded-md border border-gray-700 bg-gray-800/90 backdrop-blur-md shadow-lg p-1"
+            side="top"
+            align="center"
+          >
+            <img 
+              src={url} 
+              alt="Uploaded image preview" 
+              className="max-h-64 max-w-md rounded object-contain"
+            />
+            <Tooltip.Arrow className="fill-gray-800/90" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
 }

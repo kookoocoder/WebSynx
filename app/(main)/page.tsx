@@ -388,6 +388,54 @@ export default function Home() {
               </div>
             </div>
           </div>
+          
+          {/* Tutorial Section */}
+          <div className="mt-12 w-full pb-16 max-w-5xl">
+            <h2 className="text-center text-2xl font-medium text-white mb-6">How to use WebSynx</h2>
+            
+            <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-6 overflow-hidden">
+              {/* Video container with 16:9 aspect ratio */}
+              <div className="relative w-full pb-[56.25%] mb-6">
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-900 rounded-lg">
+                  {/* Placeholder for the actual video */}
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 bg-purple-500/20 flex items-center justify-center rounded-full mb-4">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      </svg>
+                    </div>
+                    <p className="text-gray-300 max-w-md">Tutorial video coming soon! Learn how to create stunning websites with WebSynx in minutes.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-10 h-10 bg-purple-500/10 flex items-center justify-center rounded-full mb-3">
+                    <span className="text-purple-300 font-medium">1</span>
+                  </div>
+                  <h3 className="text-lg font-medium text-white mb-2">Describe Your Idea</h3>
+                  <p className="text-gray-300">Start by describing your website idea or upload a design mockup.</p>
+                </div>
+                
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-10 h-10 bg-pink-500/10 flex items-center justify-center rounded-full mb-3">
+                    <span className="text-pink-300 font-medium">2</span>
+                  </div>
+                  <h3 className="text-lg font-medium text-white mb-2">Generate Website</h3>
+                  <p className="text-gray-300">Our AI will generate a complete website based on your description.</p>
+                </div>
+                
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-10 h-10 bg-indigo-500/10 flex items-center justify-center rounded-full mb-3">
+                    <span className="text-indigo-300 font-medium">3</span>
+                  </div>
+                  <h3 className="text-lg font-medium text-white mb-2">Refine & Deploy</h3>
+                  <p className="text-gray-300">Chat with our AI to refine your site and then deploy it with one click.</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
 
         </div>
