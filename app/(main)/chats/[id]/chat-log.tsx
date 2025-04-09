@@ -6,6 +6,7 @@ import { splitByFirstCodeFence } from "@/lib/utils";
 import { Fragment } from "react";
 import Markdown from "react-markdown";
 import { StickToBottom } from "use-stick-to-bottom";
+import { Code, Eye } from "lucide-react";
 
 export default function ChatLog({
   chat,
@@ -22,11 +23,11 @@ export default function ChatLog({
 
   return (
     <StickToBottom
-      className="relative grow overflow-hidden"
+      className="relative grow overflow-hidden pt-10 fade-in"
       resize="smooth"
       initial="smooth"
     >
-      <StickToBottom.Content className="mx-auto flex w-full max-w-prose flex-col gap-8 p-8">
+      <StickToBottom.Content className="mx-auto flex w-full max-w-prose flex-col gap-4 px-4 py-2 scrollbar-hide">
         <UserMessage content={chat.prompt} />
 
         {chat.messages.slice(2).map((message) => (
@@ -62,7 +63,7 @@ export default function ChatLog({
 function UserMessage({ content }: { content: string }) {
   return (
     <div className="relative inline-flex max-w-[80%] items-end gap-3 self-end">
-      <div className="whitespace-pre-wrap rounded bg-white px-4 py-2 text-gray-600 shadow">
+      <div className="whitespace-pre-wrap rounded-xl bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 px-4 py-3 text-white shadow-md">
         {content}
       </div>
     </div>
@@ -89,19 +90,23 @@ function AssistantMessage({
       {parts.map((part, i) => (
         <div key={i}>
           {part.type === "text" ? (
-            <Markdown className="prose">{part.content}</Markdown>
+            <div className="rounded-xl bg-gray-800/40 backdrop-blur-[1px] border border-gray-700/60 px-4 py-3 text-gray-200">
+              <Markdown className="prose prose-invert prose-gray max-w-none prose-headings:text-gray-200 prose-p:text-gray-300 prose-a:text-purple-400">
+                {part.content}
+              </Markdown>
+            </div>
           ) : part.type === "first-code-fence-generating" ? (
             <div className="my-4">
               <button
                 disabled
-                className="inline-flex w-full animate-pulse items-center gap-2 rounded-lg border-4 border-gray-300 p-1.5"
+                className="inline-flex w-full animate-pulse items-center gap-2 rounded-xl border border-gray-700 bg-gray-800/50 backdrop-blur-[1px] p-3"
               >
-                <div className="flex size-8 items-center justify-center rounded bg-gray-300 font-bold">
-                  V{version}
+                <div className="flex size-8 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400">
+                  <Code className="h-4 w-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 text-left leading-none">
-                  <div className="text-sm font-medium leading-none">
-                    Generating...
+                  <div className="text-sm font-medium leading-none text-gray-200">
+                    Generating code...
                   </div>
                 </div>
               </button>
@@ -109,20 +114,22 @@ function AssistantMessage({
           ) : message ? (
             <div className="my-4">
               <button
-                className={`${isActive ? "bg-white" : "bg-gray-300 hover:border-gray-400 hover:bg-gray-400"} inline-flex w-full items-center gap-2 rounded-lg border-4 border-gray-300 p-1.5`}
+                className={`${
+                  isActive 
+                    ? "bg-gray-800/70 border-purple-500/50" 
+                    : "bg-gray-800/40 hover:bg-gray-800/60 hover:border-gray-600"
+                } inline-flex w-full items-center gap-3 rounded-xl border border-gray-700 backdrop-blur-[1px] p-3 transition-colors`}
                 onClick={() => onMessageClick(message)}
               >
-                <div
-                  className={`${isActive ? "bg-gray-300" : "bg-gray-200"} flex size-8 items-center justify-center rounded font-bold`}
-                >
-                  V{version}
+                <div className="flex size-8 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400">
+                  <Code className="h-4 w-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 text-left leading-none">
-                  <div className="text-sm font-medium leading-none">
+                  <div className="text-sm font-medium leading-none text-gray-200">
                     {toTitleCase(part.filename.name)}{" "}
                     {version !== 1 && `v${version}`}
                   </div>
-                  <div className="text-xs leading-none text-gray-500">
+                  <div className="text-xs leading-none text-gray-400">
                     {part.filename.name}
                     {version !== 1 && `-v${version}`}
                     {"."}
@@ -130,25 +137,25 @@ function AssistantMessage({
                   </div>
                 </div>
                 <div className="ml-auto">
-                  <ArrowLeftIcon />
+                  <Eye className="h-4 w-4 text-gray-400" />
                 </div>
               </button>
             </div>
           ) : (
             <div className="my-4">
               <button
-                className="inline-flex w-full items-center gap-2 rounded-lg border-4 border-gray-300 p-1.5"
+                className="inline-flex w-full items-center gap-3 rounded-xl border border-gray-700 bg-gray-800/50 backdrop-blur-[1px] p-3"
                 disabled
               >
-                <div className="flex size-8 items-center justify-center rounded bg-gray-300 font-bold">
-                  V{version}
+                <div className="flex size-8 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400">
+                  <Code className="h-4 w-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 text-left leading-none">
-                  <div className="text-sm font-medium leading-none">
+                  <div className="text-sm font-medium leading-none text-gray-200">
                     {toTitleCase(part.filename.name)}{" "}
                     {version !== 1 && `v${version}`}
                   </div>
-                  <div className="text-xs leading-none text-gray-500">
+                  <div className="text-xs leading-none text-gray-400">
                     {part.filename.name}
                     {version !== 1 && `-v${version}`}
                     {"."}
@@ -156,7 +163,7 @@ function AssistantMessage({
                   </div>
                 </div>
                 <div className="ml-auto">
-                  <ArrowLeftIcon />
+                  <Eye className="h-4 w-4 text-gray-400" />
                 </div>
               </button>
             </div>

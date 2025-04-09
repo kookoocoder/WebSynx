@@ -1,3 +1,5 @@
+"use client";
+
 // import {
 //   runJavaScriptCode,
 //   runPythonCode,
@@ -14,7 +16,11 @@ export default function CodeRunner({
   code: string;
   onRequestFix?: (e: string) => void;
 }) {
-  return <CodeRunnerReact code={code} onRequestFix={onRequestFix} />;
+  return (
+    <div className="w-full h-full rounded-xl overflow-hidden">
+      <CodeRunnerReact code={code} onRequestFix={onRequestFix} />
+    </div>
+  );
 
   // return (
   //   <>

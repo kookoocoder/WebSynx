@@ -53,9 +53,5 @@ export const SUGGESTED_PROMPTS = [
     description:
       "Build me a flashcard app about llamas. Have some flash cards and also have the ability for users to add their own. Show one side of a card at first and reveal the answer on button click, keeping track of correct guesses to measure progress.",
   },
-  {
-    title: "Timezone dashboard",
-    description:
-      "Make me a time zone dashboard that shows me the time zone in the top 6 most popular time zones and gives me a dropdown to add others",
-  },
+ 
 ];

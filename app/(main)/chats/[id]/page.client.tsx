@@ -13,6 +13,7 @@ import CodeViewer from "./code-viewer";
 import CodeViewerLayout from "./code-viewer-layout";
 import type { Chat } from "./page";
 import { Context } from "../../providers";
+import { ArrowLeft } from "lucide-react";
 
 export default function PageClient({ chat }: { chat: Chat }) {
   const context = use(Context);
@@ -30,6 +31,12 @@ export default function PageClient({ chat }: { chat: Chat }) {
   const [activeMessage, setActiveMessage] = useState(
     chat.messages.filter((m) => m.role === "assistant").at(-1),
   );
+
+  const onSplineLoad = (splineApp: any) => {
+    console.log("Spline loaded successfully");
+    setSplineLoaded(true);
+    splineRef.current = splineApp;
+  };
 
   useEffect(() => {
     async function f() {
@@ -128,15 +135,42 @@ export default function PageClient({ chat }: { chat: Chat }) {
     }
   }, [chat.id, chat.messages, chat.model, router, searchParams, streamPromise]);
 
+  // Check if user is logged in to adjust layout accordingly
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  useEffect(() => {
+    // Check if user is logged in
+    const storedLoginState = localStorage.getItem('isLoggedIn') === 'true';
+    setIsLoggedIn(storedLoginState);
+    
+    // Update login state when it changes
+    const handleStorageChange = () => {
+      const updatedLoginState = localStorage.getItem('isLoggedIn') === 'true';
+      setIsLoggedIn(updatedLoginState);
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   return (
     <div className="h-dvh">
       <div className="flex h-full">
-        <div className="mx-auto flex w-full shrink-0 flex-col overflow-hidden lg:w-1/2">
-          <div className="flex items-center gap-4 px-4 py-4">
-            <Link href="/">
-              <LogoSmall />
-            </Link>
-            <p className="italic text-gray-500">{chat.title}</p>
+        <div className={`mx-auto flex w-full shrink-0 flex-col overflow-hidden ${isLoggedIn ? 'lg:w-full' : 'lg:w-1/2'}`}>
+          <div className="flex justify-start px-4 pt-3 pb-2 absolute top-0 left-0 z-10 w-full">
+            <div className="flex items-center gap-2.5">
+              <Link 
+                href="/" 
+                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 p-1 shadow-sm transition-opacity hover:opacity-90"
+                aria-label="Back to home"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 text-white" />
+              </Link>
+              
+              <div className="inline-flex items-center">
+                <span className="text-xs text-gray-200 font-medium truncate max-w-[250px] drop-shadow-sm">{chat.title}</span>
+              </div>
+            </div>
           </div>
 
           <ChatLog
@@ -205,8 +239,11 @@ export default function PageClient({ chat }: { chat: Chat }) {
                     }
                     return res.body;
                   });
-                  setStreamPromise(streamPromise);
-                  router.refresh();
+
+                  startTransition(() => {
+                    setStreamPromise(streamPromise);
+                    router.refresh();
+                  });
                 });
               }}
             />

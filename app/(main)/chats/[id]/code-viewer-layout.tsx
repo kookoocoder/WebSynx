@@ -31,7 +31,7 @@ export default function CodeViewerLayout({
               <DrawerDescription>Description</DrawerDescription>
             </VisuallyHidden.Root>
 
-            <div className="flex h-[90vh] flex-col overflow-y-scroll">
+            <div className="flex h-[90vh] flex-col overflow-y-scroll scrollbar-hide">
               {children}
             </div>
           </DrawerContent>
@@ -40,8 +40,8 @@ export default function CodeViewerLayout({
         <div
           className={`${isShowing ? "w-1/2" : "w-0"} hidden h-full overflow-hidden py-5 transition-[width] lg:block`}
         >
-          <div className="ml-4 flex h-full flex-col rounded-l-xl shadow-lg shadow-gray-400/40">
-            <div className="flex h-full flex-col rounded-l-xl shadow shadow-gray-800/50">
+          <div className="ml-4 flex h-full flex-col rounded-l-xl">
+            <div className="flex h-full flex-col rounded-l-xl border-l border-t border-b border-gray-700/50 bg-gray-900/80 backdrop-blur-sm">
               {children}
             </div>
           </div>
