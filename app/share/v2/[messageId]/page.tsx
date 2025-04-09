@@ -1,5 +1,5 @@
 import CodeRunner from "@/components/code-runner";
-import { getPrisma } from "@/lib/prisma";
+import { supabase } from "@/lib/supabaseClient";
 import { extractFirstCodeBlock } from "@/lib/utils";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -41,14 +41,20 @@ export default async function SharePage({
 }) {
   const { messageId } = await params;
 
-  const prisma = getPrisma();
-  const message = await prisma.message.findUnique({ where: { id: messageId } });
-  if (!message) {
+  const { data: messageData, error: messageError } = await supabase
+    .from('messages')
+    .select('content')
+    .eq('id', messageId)
+    .single();
+
+  if (messageError || !messageData) {
+    console.error("Supabase error fetching message content:", messageError);
     notFound();
   }
 
-  const app = extractFirstCodeBlock(message.content);
+  const app = extractFirstCodeBlock(messageData.content);
   if (!app || !app.language) {
+    console.warn("Could not extract code block from message:", messageId);
     notFound();
   }
 
@@ -60,13 +66,26 @@ export default async function SharePage({
 }
 
 const getMessage = cache(async (messageId: string) => {
-  const prisma = getPrisma();
-  return prisma.message.findUnique({
-    where: {
-      id: messageId,
-    },
-    include: {
-      chat: true,
-    },
-  });
+  const { data, error } = await supabase
+    .from('messages')
+    .select('content, chats ( title )')
+    .eq('id', messageId)
+    .single();
+
+  if (error) {
+    console.error("Supabase error in getMessage:", error);
+    return null;
+  }
+
+  if (data && data.chats) {
+    const chatData = data.chats as unknown as { title: string };
+    return {
+      content: data.content,
+      chat: {
+        title: chatData.title
+      }
+    };
+  }
+
+  return null;
 });
