@@ -9,7 +9,7 @@ import LoadingButton from "@/components/loading-button";
 import Spinner from "@/components/spinner";
 import * as Select from "@radix-ui/react-select";
 import assert from "assert";
-import { CheckIcon, ChevronDownIcon, Code, Layout, Sparkles } from "lucide-react";
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon, Code, Layout, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useState, useRef, useTransition, useEffect } from "react";
@@ -39,6 +39,7 @@ export default function Home() {
   const splineRef = useRef<any>(null);
 
   const [isPending, startTransition] = useTransition();
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
     // Log when the component mounts
@@ -108,8 +109,12 @@ export default function Home() {
     .map((text) => (text === "" ? "a" : text))
     .join("\n");
 
+  const toggleFaq = (index: number) => {
+    setOpenFaq(openFaq === index ? null : index);
+  };
+
   return (
-    <div className="relative flex grow flex-col min-h-screen overflow-hidden">
+    <div className="relative flex grow flex-col min-h-screen overflow-hidden scroll-smooth">
       <div className="relative z-10 flex h-full grow flex-col">
         <div className="absolute top-0 right-0 p-4 z-20">
           <UserAuthNav />
@@ -437,6 +442,103 @@ export default function Home() {
             </div>
           </div>
 
+          {/* FAQ Section */}
+          <div className="mt-12 w-full pb-16 max-w-5xl">
+            <h2 className="text-center text-2xl font-medium text-white mb-6">Frequently Asked Questions</h2>
+            
+            <div className="space-y-3">
+              {/* FAQ Item 1 */}
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
+                <div className="flex justify-between items-center w-full text-left">
+                  <h3 className="text-lg font-medium text-white">How does WebSynx create websites?</h3>
+                  <div className="bg-gray-700/50 rounded-full p-1">
+                    <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
+                  </div>
+                </div>
+                <div className="mt-0 max-h-0 overflow-hidden text-sm text-gray-300 transition-all duration-700 ease-in-out group-hover:mt-2 group-hover:max-h-40">
+                  WebSynx uses advanced AI technology to generate fully functional websites based on your text descriptions or uploaded designs. Our models translate your vision into code, creating responsive websites with clean, modern designs.
+                </div>
+              </div>
+              
+              {/* FAQ Item 2 */}
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
+                <div className="flex justify-between items-center w-full text-left">
+                  <h3 className="text-lg font-medium text-white">Do I need technical knowledge to use WebSynx?</h3>
+                  <div className="bg-gray-700/50 rounded-full p-1">
+                    <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
+                  </div>
+                </div>
+                <div className="mt-0 max-h-0 overflow-hidden text-sm text-gray-300 transition-all duration-700 ease-in-out group-hover:mt-2 group-hover:max-h-40">
+                  Not at all! WebSynx is designed for users with any level of technical expertise. Simply describe what you want, and our AI generates the website for you. You can make adjustments through natural conversation without writing a single line of code.
+                </div>
+              </div>
+              
+              {/* FAQ Item 3 */}
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
+                <div className="flex justify-between items-center w-full text-left">
+                  <h3 className="text-lg font-medium text-white">What types of websites can I create?</h3>
+                  <div className="bg-gray-700/50 rounded-full p-1">
+                    <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
+                  </div>
+                </div>
+                <div className="mt-0 max-h-0 overflow-hidden text-sm text-gray-300 transition-all duration-700 ease-in-out group-hover:mt-2 group-hover:max-h-40">
+                  You can create a wide variety of websites including landing pages, e-commerce sites, portfolios, blogs, business websites, web applications, and more. If you can describe it, WebSynx can build it.
+                </div>
+              </div>
+              
+              {/* FAQ Item 4 */}
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
+                <div className="flex justify-between items-center w-full text-left">
+                  <h3 className="text-lg font-medium text-white">How do I deploy my website once it's created?</h3>
+                  <div className="bg-gray-700/50 rounded-full p-1">
+                    <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
+                  </div>
+                </div>
+                <div className="mt-0 max-h-0 overflow-hidden text-sm text-gray-300 transition-all duration-700 ease-in-out group-hover:mt-2 group-hover:max-h-40">
+                  Once your website is generated, you can deploy it with a single click to our hosting platform. Alternatively, you can download the source code to host it on your preferred platform like Vercel, Netlify, or your own server.
+                </div>
+              </div>
+              
+              {/* FAQ Item 5 */}
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
+                <div className="flex justify-between items-center w-full text-left">
+                  <h3 className="text-lg font-medium text-white">What's the difference between High and Low Quality settings?</h3>
+                  <div className="bg-gray-700/50 rounded-full p-1">
+                    <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
+                  </div>
+                </div>
+                <div className="mt-0 max-h-0 overflow-hidden text-sm text-gray-300 transition-all duration-700 ease-in-out group-hover:mt-2 group-hover:max-h-40">
+                  High Quality mode uses our most powerful AI model to create complex, feature-rich websites with more detailed designs. Low Quality is faster and suitable for quick prototypes or simpler websites. Choose based on your needs and time constraints.
+                </div>
+              </div>
+              
+              {/* FAQ Item 6 */}
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
+                <div className="flex justify-between items-center w-full text-left">
+                  <h3 className="text-lg font-medium text-white">Can I customize the website after it's generated?</h3>
+                  <div className="bg-gray-700/50 rounded-full p-1">
+                    <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
+                  </div>
+                </div>
+                <div className="mt-0 max-h-0 overflow-hidden text-sm text-gray-300 transition-all duration-700 ease-in-out group-hover:mt-2 group-hover:max-h-40">
+                  Absolutely! After generation, you can continue chatting with our AI to refine and modify any aspect of your website. You can request changes to layout, colors, content, functionality, and more through simple text instructions.
+                </div>
+              </div>
+              
+              {/* FAQ Item 7 */}
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
+                <div className="flex justify-between items-center w-full text-left">
+                  <h3 className="text-lg font-medium text-white">Can I upload my own design mockups?</h3>
+                  <div className="bg-gray-700/50 rounded-full p-1">
+                    <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
+                  </div>
+                </div>
+                <div className="mt-0 max-h-0 overflow-hidden text-sm text-gray-300 transition-all duration-700 ease-in-out group-hover:mt-2 group-hover:max-h-40">
+                  Yes! WebSynx can analyze your uploaded design mockups and convert them into fully functional websites. Simply upload your image through the interface, and our AI will transform it into a working website that matches your design.
+                </div>
+              </div>
+            </div>
+          </div>
 
         </div>
       </div>
@@ -453,6 +555,39 @@ export default function Home() {
           </div>
         </div>
       )}
+      
+      {/* Footer */}
+      <footer className="w-full bg-gray-900/40 backdrop-blur-sm border-t border-purple-700/10 py-6 mt-auto">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center">
+              <div className="text-transparent bg-gradient-to-r from-purple-600 via-pink-500 to-indigo-600 bg-clip-text font-semibold text-xl mr-2">WebSynx</div>
+              <span className="text-gray-400 text-sm">© {new Date().getFullYear()}</span>
+            </div>
+            
+            <div className="flex items-center space-x-4 text-sm text-gray-400">
+              <a href="#" className="hover:text-white transition-colors duration-300">Terms</a>
+              <a href="#" className="hover:text-white transition-colors duration-300">Privacy</a>
+              <a href="#" className="hover:text-white transition-colors duration-300">About</a>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <a href="#" className="w-8 h-8 rounded-full bg-gray-800/80 flex items-center justify-center text-gray-400 hover:text-white hover:bg-purple-900/30 transition-all duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className=""><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
+              </a>
+              <a href="#" className="w-8 h-8 rounded-full bg-gray-800/80 flex items-center justify-center text-gray-400 hover:text-white hover:bg-purple-900/30 transition-all duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className=""><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+              </a>
+              <a href="#" className="w-8 h-8 rounded-full bg-gray-800/80 flex items-center justify-center text-gray-400 hover:text-white hover:bg-purple-900/30 transition-all duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className=""><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line></svg>
+              </a>
+              <a href="https://github.com" className="w-8 h-8 rounded-full bg-gray-800/80 flex items-center justify-center text-gray-400 hover:text-white hover:bg-purple-900/30 transition-all duration-300">
+                <GithubIcon className="size-4" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
