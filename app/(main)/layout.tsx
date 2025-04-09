@@ -69,7 +69,7 @@ export default function Layout({
         
         {isLoggedIn && <Sidebar initiallyExpanded={initiallyExpanded} />}
         
-        <div className={`relative z-10 ${isLoggedIn ? 'lg:ml-[250px] transition-all duration-200' : ''}`}>
+        <div className="relative z-10">
           {children}
         </div>
 

@@ -78,9 +78,9 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
 
   return (
     <motion.aside
-      className="fixed left-0 top-0 z-30 h-full border-r border-purple-700/20 bg-gray-900/70 backdrop-blur-sm"
-      initial={{ width: isExpanded ? 250 : 60 }}
-      animate={{ width: isExpanded ? 250 : 60 }}
+      className="fixed left-0 top-0 z-30 h-full bg-black/35 backdrop-blur-xl border-r border-white/10 shadow-[0_0_15px_rgba(0,0,0,0.3)] overflow-hidden"
+      initial={{ width: isExpanded ? 250 : 60, x: 0 }}
+      animate={{ width: isExpanded ? 250 : 60, x: 0 }}
       transition={{ duration: 0.2, ease: "easeInOut" }}
     >
       <div className="flex h-full flex-col">
@@ -96,7 +96,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
                 className="flex-1 overflow-hidden"
               >
                 <Link href="/" className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 flex items-center justify-center shadow-[0_0_10px_rgba(147,51,234,0.5)]">
                     <span className="text-xs font-bold text-white">WS</span>
                   </div>
                   <span className="font-semibold text-gray-200 truncate">WebSynx</span>
@@ -107,7 +107,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
           
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-800 text-gray-400 transition-colors"
+            className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-white/10 text-gray-400 transition-colors"
             aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
           >
             {isExpanded ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
@@ -117,7 +117,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
         {/* New chat button */}
         <Link
           href="/"
-          className={`flex items-center gap-2 px-3 py-2.5 my-2 mx-2 rounded-md bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 text-white font-medium transition-opacity hover:opacity-90 ${
+          className={`flex items-center gap-2 px-3 py-2.5 my-2 mx-2 rounded-md bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 text-white font-medium transition-all hover:opacity-90 hover:shadow-[0_0_10px_rgba(147,51,234,0.3)] ${
             !isExpanded ? "justify-center" : ""
           }`}
         >
@@ -129,8 +129,8 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
         <div className="px-2 py-2 relative">
           <div
             className={`relative flex items-center rounded-md ${
-              isSearchActive || isExpanded ? "bg-gray-800" : "bg-transparent"
-            } transition-colors`}
+              isSearchActive || isExpanded ? "bg-white/5 backdrop-blur-md border border-white/5" : "bg-transparent"
+            } transition-all`}
           >
             <div
               className={`flex items-center ${
@@ -186,9 +186,9 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
         </div>
         
         {/* User profile section - stub for now, will connect to user auth later */}
-        <div className="mt-auto border-t border-purple-700/20 px-3 py-3">
+        <div className="mt-auto border-t border-purple-700/20 px-3 py-3 bg-black/20 backdrop-blur-sm">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 flex items-center justify-center shadow-[0_0_10px_rgba(147,51,234,0.3)]">
               <span className="text-xs font-semibold text-white">U</span>
             </div>
             
@@ -201,7 +201,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
                   className="flex flex-col overflow-hidden"
                 >
                   <span className="text-sm font-medium text-gray-200 truncate">User Account</span>
-                  <span className="text-xs text-gray-400 truncate">Free Plan</span>
+                  <span className="text-xs text-purple-300 truncate">Free Plan</span>
                 </motion.div>
               )}
             </AnimatePresence>

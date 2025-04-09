@@ -32,12 +32,6 @@ export default function PageClient({ chat }: { chat: Chat }) {
     chat.messages.filter((m) => m.role === "assistant").at(-1),
   );
 
-  const onSplineLoad = (splineApp: any) => {
-    console.log("Spline loaded successfully");
-    setSplineLoaded(true);
-    splineRef.current = splineApp;
-  };
-
   useEffect(() => {
     async function f() {
       if (!streamPromise || isHandlingStreamRef.current) return;
@@ -156,7 +150,7 @@ export default function PageClient({ chat }: { chat: Chat }) {
   return (
     <div className="h-dvh">
       <div className="flex h-full">
-        <div className={`mx-auto flex w-full shrink-0 flex-col overflow-hidden ${isLoggedIn ? 'lg:w-full' : 'lg:w-1/2'}`}>
+        <div className="mx-auto flex w-full shrink-0 flex-col overflow-hidden lg:w-1/2">
           <div className="flex justify-start px-4 pt-3 pb-2 absolute top-0 left-0 z-10 w-full">
             <div className="flex items-center gap-2.5">
               <Link 
