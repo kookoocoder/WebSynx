@@ -14,6 +14,7 @@ import UploadIcon from "@/components/icons/upload-icon";
 import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import * as Tooltip from '@radix-ui/react-tooltip';
+import Image from 'next/image';
 
 export default function ChatBox({
   chat,
@@ -150,9 +151,11 @@ export default function ChatBox({
                     <Tooltip.Root>
                       <Tooltip.Trigger asChild>
                         <div className="inline-flex items-center gap-2 rounded-full border border-purple-700/30 bg-gray-700/50 py-1 pl-1 pr-2 backdrop-blur-sm group relative">
-                          <img
+                          <Image
                             alt="screenshot preview"
                             src={screenshotUrl}
+                            width={20}
+                            height={20}
                             className="h-5 w-5 rounded-full object-cover"
                           />
                           <span className="text-xs font-medium text-purple-300">Image</span>
@@ -176,10 +179,13 @@ export default function ChatBox({
                           side="top"
                           align="start"
                         >
-                          <img 
+                          <Image
                             src={screenshotUrl} 
                             alt="Uploaded image preview" 
+                            width={320}
+                            height={192}
                             className="max-h-48 max-w-xs rounded object-contain"
+                            style={{ objectFit: "contain", maxWidth: '20rem', maxHeight: '12rem' }}
                           />
                           <Tooltip.Arrow className="fill-gray-800/90" />
                         </Tooltip.Content>

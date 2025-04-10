@@ -10,6 +10,7 @@ import { Code, Eye, Image as ImageIcon } from "lucide-react";
 import * as Tooltip from '@radix-ui/react-tooltip';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import Image from 'next/image';
 
 // Regex to find markdown image links like [Image](url)
 const imageLinkRegex = /\n\n\[Image\]\(([^)]+)\)/g;
@@ -212,9 +213,11 @@ function ImagePreview({ url }: { url: string }) {
             rel="noopener noreferrer"
             className="inline-block rounded border border-purple-400/30 p-1 bg-purple-900/30 hover:border-purple-400/50 transition-all"
           >
-            <img 
+            <Image 
               src={url} 
               alt="Uploaded preview" 
+              width={40}
+              height={40}
               className="h-10 w-10 object-cover rounded-sm"
             />
           </a>
@@ -226,10 +229,13 @@ function ImagePreview({ url }: { url: string }) {
             side="top"
             align="center"
           >
-            <img 
+            <Image 
               src={url} 
               alt="Uploaded image preview" 
+              width={448}
+              height={256}
               className="max-h-64 max-w-md rounded object-contain"
+              style={{ objectFit: "contain", maxWidth: '28rem', maxHeight: '16rem' }}
             />
             <Tooltip.Arrow className="fill-gray-800/90" />
           </Tooltip.Content>

@@ -133,7 +133,7 @@ export default function Home() {
           </div>
 
           <p className="pt-6 mt-16 text-center text-lg text-gray-300 max-w-2xl">
-          Describe your idea or upload a design — we'll build the website for you.
+          Describe your idea or upload a design — we&apos;ll build the website for you.
           </p>
 
           <form
@@ -489,7 +489,7 @@ export default function Home() {
               {/* FAQ Item 4 */}
               <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
                 <div className="flex justify-between items-center w-full text-left">
-                  <h3 className="text-lg font-medium text-white">How do I deploy my website once it's created?</h3>
+                  <h3 className="text-lg font-medium text-white">How do I deploy my website once it&apos;s created?</h3>
                   <div className="bg-gray-700/50 rounded-full p-1">
                     <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
                   </div>
@@ -502,7 +502,7 @@ export default function Home() {
               {/* FAQ Item 5 */}
               <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
                 <div className="flex justify-between items-center w-full text-left">
-                  <h3 className="text-lg font-medium text-white">What's the difference between High and Low Quality settings?</h3>
+                  <h3 className="text-lg font-medium text-white">What&apos;s the difference between High and Low Quality settings?</h3>
                   <div className="bg-gray-700/50 rounded-full p-1">
                     <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
                   </div>
@@ -515,7 +515,7 @@ export default function Home() {
               {/* FAQ Item 6 */}
               <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
                 <div className="flex justify-between items-center w-full text-left">
-                  <h3 className="text-lg font-medium text-white">Can I customize the website after it's generated?</h3>
+                  <h3 className="text-lg font-medium text-white">Can I customize the website after it&apos;s generated?</h3>
                   <div className="bg-gray-700/50 rounded-full p-1">
                     <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
                   </div>
