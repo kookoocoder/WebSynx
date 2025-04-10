@@ -1,4 +1,3 @@
-// import { getPrisma } from "@/lib/prisma";
 import { supabase } from "@/lib/supabaseClient";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -18,7 +17,6 @@ export default async function Page({
 }
 
 const getChatById = cache(async (id: string) => {
-  // const prisma = getPrisma();
   const { data: chatData, error } = await supabase
     .from('chats')
     .select(`

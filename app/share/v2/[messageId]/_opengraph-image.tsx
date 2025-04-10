@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-// import { getPrisma } from "@/lib/prisma"; // Remove Prisma import
+// REMOVE THIS LINE: // import { getPrisma } from "@/lib/prisma"; // Remove Prisma import
 import { supabase } from "@/lib/supabaseClient"; // Add Supabase client import
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
@@ -18,15 +18,15 @@ export default async function Image({
   params: { messageId: string };
 }) {
   let messageId = params.messageId;
-  // const prisma = getPrisma(); // Remove Prisma client instantiation
-  // let message = await prisma.message.findUnique({ // Remove Prisma query
-  //   where: {
-  //     id: messageId,
-  //   },
-  //   include: {
-  //     chat: true,
-  //   },
-  // });
+  // REMOVE THIS LINE: // const prisma = getPrisma(); // Remove Prisma client instantiation
+  // REMOVE THIS LINE: // let message = await prisma.message.findUnique({ // Remove Prisma query
+  // REMOVE THIS LINE: //   where: {
+  // REMOVE THIS LINE: //     id: messageId,
+  // REMOVE THIS LINE: //   },
+  // REMOVE THIS LINE: //   include: {
+  // REMOVE THIS LINE: //     chat: true,
+  // REMOVE THIS LINE: //   },
+  // REMOVE THIS LINE: // });
 
   // Use Supabase to fetch the message and related chat title
   const { data: messageData, error: dbError } = await supabase
