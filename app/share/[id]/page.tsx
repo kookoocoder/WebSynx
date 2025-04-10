@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { cache } from "react";
 import CodeRunner from "@/components/code-runner";
-import { getPrisma } from "@/lib/prisma";
+import { supabase } from "@/lib/supabaseClient";
 
 /*
   This is the Share page for v1 apps, before the chat interface was added.
@@ -14,7 +14,16 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const generatedApp = await getGeneratedAppByID((await params).id);
+  const { id } = await params;
+  const { data: generatedApp, error } = await getGeneratedAppByID(id);
+
+  if (error || !generatedApp) {
+    console.error("Error fetching app for metadata:", error);
+    return {
+      title: "App Not Found | LlamaCoder.io",
+      description: "The requested app could not be found.",
+    };
+  }
 
   let prompt = generatedApp?.prompt;
   if (typeof prompt !== "string") {
@@ -26,7 +35,7 @@ export async function generateMetadata({
 
   return {
     title: "An app generated on LlamaCoder.io",
-    description: `Prompt: ${generatedApp?.prompt}`,
+    description: `Prompt: ${prompt}`,
     openGraph: {
       images: [`/api/og?${searchParams}`],
     },
@@ -44,15 +53,24 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  // if process.env.DATABASE_URL is not set, throw an error
   if (typeof id !== "string") {
     notFound();
   }
 
-  const generatedApp = await getGeneratedAppByID(id);
+  const { data: generatedApp, error } = await getGeneratedAppByID(id);
+
+  if (error) {
+    console.error("Error fetching shared app:", error);
+    return <div>Error loading app. Please try again later.</div>;
+  }
 
   if (!generatedApp) {
     return <div>App not found</div>;
+  }
+
+  if (typeof generatedApp.code !== 'string') {
+    console.error("Fetched app data missing code property or it's not a string:", generatedApp);
+    return <div>App data is incomplete.</div>;
   }
 
   return (
@@ -63,10 +81,9 @@ export default async function Page({
 }
 
 const getGeneratedAppByID = cache(async (id: string) => {
-  const prisma = getPrisma();
-  return prisma.generatedApp.findUnique({
-    where: {
-      id,
-    },
-  });
+  return supabase
+    .from('generatedApp')
+    .select('*')
+    .eq('id', id)
+    .single();
 });
