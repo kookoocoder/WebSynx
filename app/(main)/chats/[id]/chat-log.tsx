@@ -12,6 +12,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import ThinkingPill from "@/components/thinking-pill";
 import React from "react";
+import Image from "next/image";
 
 // Regex to find markdown image links like [Image](url)
 const imageLinkRegex = /\n\n\[Image\]\(([^)]+)\)/g;
@@ -245,7 +246,9 @@ function ImagePreview({ url }: { url: string }) {
             rel="noopener noreferrer"
             className="inline-block rounded border border-purple-400/30 p-1 bg-purple-900/30 hover:border-purple-400/50 transition-all"
           >
-            <img 
+            <Image 
+              width={40}
+              height={40}
               src={url} 
               alt="Uploaded preview" 
               className="h-10 w-10 object-cover rounded-sm"
@@ -259,10 +262,13 @@ function ImagePreview({ url }: { url: string }) {
             side="top"
             align="center"
           >
-            <img 
+            <Image 
+              width={512}
+              height={256}
               src={url} 
               alt="Uploaded image preview" 
               className="max-h-64 max-w-md rounded object-contain"
+              style={{ width: 'auto', height: 'auto' }}
             />
             <Tooltip.Arrow className="fill-gray-800/90" />
           </Tooltip.Content>

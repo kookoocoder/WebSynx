@@ -6,6 +6,7 @@ import { User, LogOut, ChevronDown } from "lucide-react";
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
+import Image from "next/image";
 
 export function UserAuthNav() {
   const supabase = createClientComponentClient();
@@ -121,9 +122,11 @@ export function UserAuthNav() {
           >
             <div className="flex h-6 w-6 items-center justify-center rounded-full overflow-hidden">
               {user.profile?.avatar_url ? (
-                <img 
+                <Image 
+                  width={24}
+                  height={24}
                   src={user.profile.avatar_url} 
-                  alt={user.profile?.full_name || user.email} 
+                  alt={user.profile?.full_name || user.email || 'User Avatar'} 
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -144,9 +147,11 @@ export function UserAuthNav() {
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden">
                     {user.profile?.avatar_url ? (
-                      <img 
+                      <Image 
+                        width={36}
+                        height={36}
                         src={user.profile.avatar_url} 
-                        alt={user.profile?.full_name || user.email} 
+                        alt={user.profile?.full_name || user.email || 'User Avatar'} 
                         className="h-full w-full object-cover"
                       />
                     ) : (

@@ -203,7 +203,7 @@ export default function Home() {
           </div>
 
           <p className="pt-6 mt-16 text-center text-lg text-gray-300 max-w-2xl">
-          Describe your idea or upload a design — we'll build the website for you.
+          Describe your idea or upload a design — we&apos;ll build the website for you.
           </p>
 
           <form
@@ -544,7 +544,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="mt-0 max-h-0 overflow-hidden text-sm text-gray-300 transition-all duration-700 ease-in-out group-hover:mt-2 group-hover:max-h-40">
-                  WebSynx uses advanced AI technology to generate fully functional websites based on your text descriptions or uploaded designs. Our models translate your vision into code, creating responsive websites with clean, modern designs.
+                  WebSynx uses AI to understand your description and generates a complete website structure, design, and content. It&apos;s like having a team of web developers and designers at your fingertips, ready to build your vision in minutes.
                 </div>
               </div>
               
@@ -577,7 +577,7 @@ export default function Home() {
               {/* FAQ Item 4 */}
               <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
                 <div className="flex justify-between items-center w-full text-left">
-                  <h3 className="text-lg font-medium text-white">How do I deploy my website once it's created?</h3>
+                  <h3 className="text-lg font-medium text-white">How do I deploy my website once it&apos;s created?</h3>
                   <div className="bg-gray-700/50 rounded-full p-1">
                     <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
                   </div>
@@ -590,7 +590,7 @@ export default function Home() {
               {/* FAQ Item 5 */}
               <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
                 <div className="flex justify-between items-center w-full text-left">
-                  <h3 className="text-lg font-medium text-white">What's the difference between High and Low Quality settings?</h3>
+                  <h3 className="text-lg font-medium text-white">What&apos;s the difference between High and Low Quality settings?</h3>
                   <div className="bg-gray-700/50 rounded-full p-1">
                     <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
                   </div>
@@ -603,7 +603,7 @@ export default function Home() {
               {/* FAQ Item 6 */}
               <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/10 rounded-xl p-4 transition-all duration-500 group hover:bg-gray-800/70">
                 <div className="flex justify-between items-center w-full text-left">
-                  <h3 className="text-lg font-medium text-white">Can I customize the website after it's generated?</h3>
+                  <h3 className="text-lg font-medium text-white">Can I customize the website after it&apos;s generated?</h3>
                   <div className="bg-gray-700/50 rounded-full p-1">
                     <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
                   </div>

@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-import { getPrisma } from "@/lib/prisma";
+import { supabase } from "@/lib/supabaseClient";
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -16,25 +16,30 @@ export default async function Image({
 }: {
   params: { messageId: string };
 }) {
-  let messageId = params.messageId;
-  const prisma = getPrisma();
-  let message = await prisma.message.findUnique({
-    where: {
-      id: messageId,
-    },
-    include: {
-      chat: true,
-    },
-  });
+  const { messageId } = params;
+
+  const { data: messageData, error } = await supabase
+    .from('messages')
+    .select(`
+      id,
+      chat_id,
+      chats ( title )
+    `)
+    .eq('id', messageId)
+    .single();
+
+  if (error) {
+    console.error("Error fetching message from Supabase:", error);
+  }
 
   const backgroundData = await readFile(
     join(process.cwd(), "./public/dynamic-og.png"),
   );
   const backgroundSrc = Uint8Array.from(backgroundData).buffer;
 
-  let title = message
-    ? message.chat.title
-    : "An app generated on LlamaCoder.io";
+  const title = (messageData?.chats && Array.isArray(messageData.chats) && messageData.chats.length > 0)
+    ? messageData.chats[0]?.title
+    : "An app generated on WebSynx";
 
   return new ImageResponse(
     (
@@ -55,7 +60,7 @@ export default async function Image({
             padding: "50px 200px",
           }}
         >
-          {title}
+          {title || "An app generated on WebSynx"}
         </div>
       </div>
     ),
