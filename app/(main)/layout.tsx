@@ -4,10 +4,11 @@ import Providers from "@/app/(main)/providers";
 import { Toaster } from "@/components/ui/toaster";
 import Spline from '@splinetool/react-spline';
 import '@splinetool/runtime';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Sidebar from '@/components/sidebar';
 import { usePathname } from 'next/navigation';
 import { DemoControls } from '@/components/demo-controls';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'; // Import Supabase client
 
 export default function Layout({
   children,
@@ -15,30 +16,36 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   const [splineLoaded, setSplineLoaded] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Mock login state
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // State to track Supabase auth status
   const pathname = usePathname();
+  // Memoize the Supabase client instance to prevent it from changing on re-renders
+  const supabase = useMemo(() => createClientComponentClient(), []);
   
-  // For demo purposes, toggle login state
+  // Check Supabase auth state on mount and listen for changes
   useEffect(() => {
-    // This simulates a logged-in user - in a real app, you'd use auth state
-    const userIsLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    setIsLoggedIn(userIsLoggedIn);
-    
-    // Add a key handler to toggle login state with Ctrl+L
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 'l') {
-        setIsLoggedIn(prev => {
-          const newState = !prev;
-          localStorage.setItem('isLoggedIn', String(newState));
-          return newState;
-        });
-        e.preventDefault();
+    let mounted = true;
+
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (mounted) {
+        setIsLoggedIn(!!session); // Set logged in status based on session existence
       }
+    }
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setIsLoggedIn(!!session); // Update logged in status on auth changes
+      }
+    });
+
+    // Cleanup listener on unmount
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
     };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [supabase]); // Dependency array now uses the stable memoized client
 
   const onSplineLoad = () => {
     console.log("Spline loaded successfully");
@@ -69,7 +76,7 @@ export default function Layout({
         
         {isLoggedIn && <Sidebar initiallyExpanded={initiallyExpanded} />}
         
-        <div className="relative z-10">
+        <div className="relative z-10 flex-grow flex flex-col">
           {children}
         </div>
 

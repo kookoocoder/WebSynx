@@ -10,8 +10,8 @@ import { notFound } from "next/navigation";
 import Together from "together-ai";
 
 // Helper function for error handling (optional but recommended)
-async function handleSupabaseError(promise: Promise<any>, context: string) {
-    const { data, error } = await promise;
+async function handleSupabaseError(query: any, context: string) {
+    const { data, error } = await query;
     if (error) {
         console.error(`Supabase Error [${context}]:`, error);
         throw new Error(`Supabase operation failed: ${context} - ${error.message}`);
@@ -38,7 +38,7 @@ export async function createChat(
         prompt,
         title: "", // Title is updated later
         shadcn: true, // Assuming this is constant based on original code
-        "llamaCoderVersion": "v2" // Match schema default/column name
+        "websynxVersion": "v2" // Match schema default/column name
       })
       .select('id') // Select only the ID initially
       .single(), // Expecting a single row back
