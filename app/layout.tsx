@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title,
   description,
   icons: {
-    icon: "/favicon.ico",
+    icon: "/websynx-logo.png",
   },
   openGraph: {
     images: [ogimage],
@@ -43,7 +43,7 @@ export default function RootLayout({
         <PlausibleProvider domain="llamacoder.io" />
       </head>
 
-      <body className="flex min-h-full flex-col bg-gray-900 text-gray-100 antialiased relative scrollbar-hide">
+      <body suppressHydrationWarning className="flex min-h-full flex-col bg-gray-900 text-gray-100 antialiased relative scrollbar-hide">
         {children}
       </body>
     </html>

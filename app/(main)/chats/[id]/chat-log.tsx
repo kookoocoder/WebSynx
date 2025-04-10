@@ -10,9 +10,14 @@ import { Code, Eye, Image as ImageIcon } from "lucide-react";
 import * as Tooltip from '@radix-ui/react-tooltip';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import ThinkingPill from "@/components/thinking-pill";
+import React from "react";
 
 // Regex to find markdown image links like [Image](url)
 const imageLinkRegex = /\n\n\[Image\]\(([^)]+)\)/g;
+
+// Regex to find <think>content</think> tags
+const thinkTagRegex = /<think>([\s\S]*?)<\/think>/g;
 
 export default function ChatLog({
   chat,
@@ -105,10 +110,38 @@ function AssistantMessage({
   isActive?: boolean;
   onMessageClick?: (v: Message) => void;
 }) {
-  const parts = splitByFirstCodeFence(content);
+  // Handle <think> tags separately
+  let processedContent = content;
+  const [isThinking, setIsThinking] = React.useState(false);
+  const hasThinkTag = thinkTagRegex.test(content);
+  
+  React.useEffect(() => {
+    if (hasThinkTag) {
+      setIsThinking(true);
+      // Schedule to set isThinking to false when the streaming response 
+      // should be complete or close to complete
+      const timer = setTimeout(() => {
+        setIsThinking(false);
+      }, 3000); // Adjust this timeout as needed
+      
+      return () => clearTimeout(timer);
+    }
+  }, [hasThinkTag, content]);
+  
+  // Extract thinking parts and remove from main content
+  processedContent = processedContent.replace(thinkTagRegex, () => {
+    return '';
+  });
+  
+  const parts = splitByFirstCodeFence(processedContent);
 
   return (
     <div>
+      {/* Render thinking pill if needed */}
+      {hasThinkTag && (
+        <ThinkingPill isThinking={isThinking} />
+      )}
+      
       {parts.map((part, i) => (
         <div key={i}>
           {part.type === "text" ? (

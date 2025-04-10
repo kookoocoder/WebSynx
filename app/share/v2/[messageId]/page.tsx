@@ -59,8 +59,10 @@ export default async function SharePage({
   }
 
   return (
-    <div className="flex h-full w-full grow items-center justify-center">
-      <CodeRunner language={app.language} code={app.code} />
+    <div className="fixed inset-0 w-full h-full flex items-center justify-center bg-gray-900">
+      <div className="w-full h-full max-w-none max-h-none">
+        <CodeRunner language={app.language} code={app.code} />
+      </div>
     </div>
   );
 }

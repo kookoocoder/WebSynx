@@ -1,11 +1,13 @@
 export const MODELS = [
+ 
+ 
+  {
+    label: "Claude lite",
+    value: "Qwen/QwQ-32B",
+  },
   {
     label: "DeepSeek V3",
     value: "deepseek-ai/DeepSeek-V3",
-  },
-  {
-    label: "Qwen 2.5 Coder 32B",
-    value: "Qwen/Qwen2.5-Coder-32B-Instruct",
   },
 
   {

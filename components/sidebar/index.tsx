@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion as FramerMotion } from "framer-motion";
 import ChatHistoryItem from "./chat-history-item";
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import Image from "next/image";
 
 interface SidebarProps {
   initiallyExpanded?: boolean;
@@ -161,9 +162,13 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
                 className="flex-1 overflow-hidden"
               >
                 <Link href="/" className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 flex items-center justify-center shadow-[0_0_10px_rgba(147,51,234,0.5)]">
-                    <span className="text-xs font-bold text-white">WS</span>
-                  </div>
+                  <Image 
+                    src="/websynx-logo.png" 
+                    alt="WebSynx Logo" 
+                    width={32} 
+                    height={32} 
+                    className="rounded-full"
+                  />
                   <span className="font-semibold text-gray-200 truncate">WebSynx</span>
                 </Link>
               </FramerMotion.div>
@@ -204,7 +209,16 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
                   : "justify-center py-2 w-full"
               }`}
               onClick={() => {
-                if (!isSearchActive) setIsSearchActive(true);
+                if (!isExpanded) {
+                  setIsExpanded(true);
+                  // Wait for the sidebar to expand before focusing the input
+                  setTimeout(() => {
+                    setIsSearchActive(true);
+                    searchInputRef.current?.focus();
+                  }, 200); // Match the transition duration
+                } else if (!isSearchActive) {
+                  setIsSearchActive(true);
+                }
               }}
             >
               <Search
@@ -256,28 +270,6 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
           )}
         </div>
         
-        {/* User profile section - stub for now, will connect to user auth later */}
-        <div className="mt-auto border-t border-purple-700/20 px-3 py-3 bg-black/20 backdrop-blur-sm">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 flex items-center justify-center shadow-[0_0_10px_rgba(147,51,234,0.3)]">
-              <span className="text-xs font-semibold text-white">U</span>
-            </div>
-            
-            <AnimatePresence initial={false}>
-              {isExpanded && (
-                <FramerMotion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex flex-col overflow-hidden"
-                >
-                  <span className="text-sm font-medium text-gray-200 truncate">User Account</span>
-                  <span className="text-xs text-purple-300 truncate">Free Plan</span>
-                </FramerMotion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
       </div>
     </FramerMotion.aside>
   );

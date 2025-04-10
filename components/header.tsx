@@ -1,11 +1,18 @@
 import Link from "next/link";
 import GithubIcon from "@/components/icons/github-icon";
+import Image from "next/image";
 
 export default function Header() {
   return (
     <header className="relative mx-auto flex w-full shrink-0 items-center justify-center py-6">
       <Link href="/">
         <div className="flex items-center gap-2">
+          <Image 
+            src="/websynx-logo.png" 
+            alt="WebSynx Logo" 
+            width={32} 
+            height={32} 
+          />
           <span className="text-xl font-semibold bg-gradient-to-r from-purple-600 via-pink-500 to-indigo-600 bg-clip-text text-transparent">
             WebSynx
           </span>

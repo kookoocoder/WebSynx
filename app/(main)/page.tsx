@@ -21,6 +21,9 @@ import { XCircleIcon } from "@heroicons/react/20/solid";
 import { MODELS, SUGGESTED_PROMPTS } from "@/lib/constants";
 import Spline from '@splinetool/react-spline';
 import '@splinetool/runtime';
+import Image from "next/image";
+import { DragEvent } from "react";
+import { nanoid } from "nanoid";
 
 export default function Home() {
   const { setStreamPromise } = use(Context);
@@ -29,9 +32,7 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState(MODELS[0].value);
   const [quality, setQuality] = useState("high");
-  const [screenshotUrl, setScreenshotUrl] = useState<string | undefined>(
-    undefined,
-  );
+  const [screenshotUrls, setScreenshotUrls] = useState<string[]>([]);
   const [screenshotLoading, setScreenshotLoading] = useState(false);
   const [splineLoaded, setSplineLoaded] = useState(false);
   const selectedModel = MODELS.find((m) => m.value === model);
@@ -40,6 +41,9 @@ export default function Home() {
 
   const [isPending, startTransition] = useTransition();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     // Log when the component mounts
@@ -62,13 +66,8 @@ export default function Home() {
     splineRef.current = splineApp;
   };
 
-  const handleScreenshotUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (prompt.length === 0) setPrompt("Build this");
-    setQuality("low");
-    setScreenshotLoading(true);
+  const handleSingleScreenshotUpload = async (file: File): Promise<string | null> => {
+    if (!file) return null;
 
     try {
       const fileExt = file.name.split('.').pop();
@@ -91,16 +90,87 @@ export default function Home() {
         throw new Error("Could not get public URL for uploaded file.");
       }
 
-      setScreenshotUrl(urlData.publicUrl);
+      return urlData.publicUrl;
 
     } catch (error) {
       console.error("Error uploading screenshot:", error);
-      setScreenshotUrl(undefined);
-      if (fileInputRef.current) {
+      return null;
+    }
+  };
+
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setScreenshotLoading(true);
+    const uploadPromises = Array.from(files)
+      .filter(file => file.type.startsWith('image/'))
+      .map(file => handleSingleScreenshotUpload(file));
+      
+    const urls = (await Promise.all(uploadPromises)).filter((url): url is string => url !== null);
+    
+    setScreenshotUrls(prevUrls => [...prevUrls, ...urls]);
+    if (prompt.length === 0 && urls.length > 0) setPrompt(`Analyze these images and provide insights.`);
+    setScreenshotLoading(false);
+
+    if (fileInputRef.current) {
         fileInputRef.current.value = "";
+    }
+  };
+
+  // Handle drag and drop events
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!screenshotLoading && !isPending) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Check if the mouse is leaving the drop zone element entirely
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!screenshotLoading && !isPending) {
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  };
+
+  const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (screenshotLoading || isPending) return;
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      setScreenshotLoading(true);
+      const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+      if (imageFiles.length > 0) {
+          const uploadPromises = imageFiles.map(file => handleSingleScreenshotUpload(file));
+          const urls = (await Promise.all(uploadPromises)).filter((url): url is string => url !== null);
+          
+          setScreenshotUrls(prevUrls => [...prevUrls, ...urls]);
+          if (prompt.length === 0 && urls.length > 0) setPrompt(`Analyze these images and provide insights.`);
       }
-    } finally {
       setScreenshotLoading(false);
+    }
+  };
+
+  // Function to remove a specific image URL
+  const removeScreenshotUrl = (urlToRemove: string) => {
+    setScreenshotUrls(prevUrls => prevUrls.filter(url => url !== urlToRemove));
+    if (screenshotUrls.length === 1 && prompt === "Analyze these images and provide insights.") {
+        setPrompt(""); // Clear default prompt if last image removed
     }
   };
 
@@ -146,11 +216,14 @@ export default function Home() {
                 assert.ok(typeof model === "string");
                 assert.ok(quality === "high" || quality === "low");
 
+                // Send only the first screenshot URL, if available, due to createChat limitations
+                const firstScreenshotUrl = screenshotUrls.length > 0 ? screenshotUrls[0] : undefined;
+
                 const { chatId, lastMessageId } = await createChat(
                   prompt,
                   model,
                   quality,
-                  screenshotUrl,
+                  firstScreenshotUrl, // Pass only the first URL
                 );
 
                 const streamPromise = fetch(
@@ -163,7 +236,7 @@ export default function Home() {
                   if (!res.body) {
                     throw new Error("No body on response");
                   }
-                  return res.body;
+                  return res;
                 });
 
                 startTransition(() => {
@@ -174,7 +247,21 @@ export default function Home() {
             }}
           >
             <Fieldset>
-              <div className="relative flex w-full max-w-2xl rounded-xl border border-gray-700 bg-gray-800/50 backdrop-blur-sm pb-12">
+              <div 
+                className={`relative flex w-full max-w-2xl rounded-xl border ${isDragging ? 'border-purple-500 bg-purple-900/20' : 'border-gray-700 bg-gray-800/50'} backdrop-blur-sm pb-12 transition-colors`}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
+                {isDragging && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-gray-800/80 backdrop-blur-sm z-10 pointer-events-none">
+                    <div className="flex flex-col items-center gap-2">
+                      <UploadIcon className="h-8 w-8 text-purple-400" />
+                      <p className="text-sm text-gray-200">Drop your image(s) here</p>
+                    </div>
+                  </div>
+                )}
                 <div className="w-full">
                   {screenshotLoading && (
                     <div className="relative mx-3 mt-3">
@@ -185,30 +272,27 @@ export default function Home() {
                       </div>
                     </div>
                   )}
-                  {screenshotUrl && (
+                  {screenshotUrls.length > 0 && (
                     <div
-                      className={`${isPending ? "invisible" : ""} relative mx-3 mt-3`}
+                      className={`${isPending ? "invisible" : ""} relative mx-3 mt-3 flex flex-wrap gap-2`}
                     >
-                      <div className="rounded-xl">
-                        <img
-                          alt="screenshot"
-                          src={screenshotUrl}
-                          className="group relative mb-2 h-16 w-[68px] rounded"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        id="x-circle-icon"
-                        className="absolute -right-3 -top-4 left-14 z-10 size-5 rounded-full bg-gray-800 text-gray-200 hover:text-gray-400"
-                        onClick={() => {
-                          setScreenshotUrl(undefined);
-                          if (fileInputRef.current) {
-                            fileInputRef.current.value = "";
-                          }
-                        }}
-                      >
-                        <XCircleIcon />
-                      </button>
+                      {screenshotUrls.map((url, index) => (
+                        <div key={url} className="relative group">
+                          <img
+                            alt={`screenshot ${index + 1}`}
+                            src={url}
+                            className="h-16 w-[68px] rounded object-cover"
+                          />
+                          <button
+                            type="button"
+                            className="absolute -right-1 -top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-gray-600 text-gray-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-500/50 hover:text-white"
+                            onClick={() => removeScreenshotUrl(url)}
+                            aria-label={`Remove image ${index + 1}`}
+                          >
+                            <XCircleIcon className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
                   <div className="relative">
@@ -321,15 +405,19 @@ export default function Home() {
                     <input
                       type="file"
                       ref={fileInputRef}
-                      onChange={handleScreenshotUpload}
+                      onChange={handleFileInputChange}
                       accept="image/*"
                       className="hidden"
+                      multiple
                     />
                     <button
                       type="button"
                       disabled={isPending}
                       className="inline-flex items-center gap-1 rounded-md p-1 text-sm text-gray-300 hover:bg-gray-700 hover:text-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 disabled:opacity-50"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        fileInputRef.current?.click();
+                      }}
                     >
                       <UploadIcon className="h-4 w-4" />
                       <span>Upload</span>
@@ -547,7 +635,7 @@ export default function Home() {
           <div className="rounded-lg bg-gray-800/90 border border-purple-700/15 p-6 shadow-xl">
             <LoadingMessage 
               isHighQuality={quality === "high"} 
-              screenshotUrl={screenshotUrl} 
+              screenshotUrl={screenshotUrls.length > 0 ? screenshotUrls[0] : undefined} 
             />
             <div className="mt-4 flex justify-center">
               <Spinner className="size-8 text-purple-400" />

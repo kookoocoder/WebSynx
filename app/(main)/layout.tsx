@@ -58,7 +58,7 @@ export default function Layout({
 
   return (
     <Providers>
-      <body className="flex min-h-full flex-col bg-gray-900 text-gray-100 antialiased relative scrollbar-hide">
+      <body suppressHydrationWarning className="flex min-h-full flex-col bg-gray-900 text-gray-100 antialiased relative scrollbar-hide">
         <div className="fixed inset-0 z-0">
           {!splineLoaded && (
             <div className="w-full h-full bg-gradient-to-b from-purple-800/5 via-gray-950/90 to-black"></div>
