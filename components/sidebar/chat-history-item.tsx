@@ -56,4 +56,4 @@ export default function ChatHistoryItem({
       </AnimatePresence>
     </Link>
   );
-} 
+}

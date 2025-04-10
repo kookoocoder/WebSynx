@@ -1,5 +1,5 @@
 {
-  "name": "wedsynx",
+  "name": "websynx",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -24,6 +24,7 @@
     "@radix-ui/react-tooltip": "^1.2.0",
     "@splinetool/react-spline": "^4.0.0",
     "@splinetool/runtime": "^1.9.82",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "^2.49.4",
     "@tailwindcss/typography": "^0.5.15",
     "@vercel/og": "^0.6.4",
