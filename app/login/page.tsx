@@ -1,73 +1,170 @@
 "use client";
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Github, Chrome } from 'lucide-react';
-import Image from "next/image";
+
+import React, { useState } from 'react';
+// import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'; // Removed
+import { useRouter } from 'next/navigation';
+// import { Button } from "@/components/ui/button"; // Commented out due to path issue
+// import { Input } from "@/components/ui/input"; // Commented out due to path issue
+// import { Label } from "@/components/ui/label"; // Commented out due to path issue
+import { toast } from "@/hooks/use-toast";
+import { Github, Chrome } from 'lucide-react'; // Keep icons if used for other buttons
+import Image from 'next/image';
 
 export default function LoginPage() {
-  const supabase = createClientComponentClient();
+  // const supabase = createClientComponentClient(); // Removed
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleOAuthSignIn = async (provider: 'google' | 'github') => {
+  const handleEmailLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
+    console.log("Login attempt with:", { email }); // Log attempt
+
+    // Placeholder for your custom email/password authentication logic
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`
-        },
-      });
-      if (error) throw error;
+      // Replace this with your actual authentication call
+      // const response = await myAuthApi.loginWithEmailPassword(email, password);
+      // if (response.success) {
+      //   toast({ title: "Login Successful (Placeholder)" });
+      //   router.push('/'); // Redirect to dashboard or home
+      // } else {
+      //   throw new Error(response.message || "Invalid credentials");
+      // }
+      
+      // Simulate an error for now
+       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+       throw new Error("Email/Password login not implemented yet.");
+
     } catch (error: any) {
-      console.error(`Error signing in with ${provider}:`, error);
+      console.error("Login failed (Placeholder):", error);
+      toast({
+        title: "Login Failed (Placeholder)",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Removed handleGitHubLogin and handleGoogleLogin as they relied on Supabase OAuth
+  /*
+  const handleGitHubLogin = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      console.error("GitHub login error:", error);
+      toast({
+        title: "GitHub Login Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+    // No finally setLoading(false) here, as Supabase handles the redirect flow
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${location.origin}/auth/callback`,
+        // Optional: Add scopes if needed
+        // queryParams: {
+        //   access_type: 'offline',
+        //   prompt: 'consent',
+        // },
+      },
+    });
+    if (error) {
+      console.error("Google login error:", error);
+      toast({
+        title: "Google Login Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
+  */
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center relative">
-      {/* Background with gradient */}
-      <div className="fixed inset-0 z-0">
-        <div className="w-full h-full bg-gradient-to-b from-purple-800/5 via-gray-950/90 to-black"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-800/30 via-black/60 to-black/80"></div>
-      </div>
-      
-      {/* Logo pill at the top */}
-      <div className="relative z-10 mb-8 flex items-center justify-center">
-        <div className="bg-gray-800/70 backdrop-blur-sm px-5 py-2 rounded-full border border-purple-700/20 flex items-center gap-2 shadow-lg">
-          <Image 
-            src="/websynx-logo.png" 
-            alt="WebSynx Logo" 
-            width={24} 
-            height={24} 
-            className="rounded-full"
-          />
-          <span className="text-base font-semibold bg-gradient-to-r from-purple-600 via-pink-500 to-indigo-600 bg-clip-text text-transparent">
-            WebSynx
-          </span>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 p-4">
+      <div className="w-full max-w-md rounded-xl border border-purple-700/30 bg-gray-800/50 p-8 shadow-2xl shadow-purple-500/10 backdrop-blur-lg">
+        <div className="mb-6 flex justify-center">
+           {/* Replace with your logo */}
+          <Image src="/websynx-logo.png" alt="WebSynx Logo" width={64} height={64} className="rounded-full" /> 
         </div>
-      </div>
-      
-      {/* Login container */}
-      <div className="relative z-10 w-full max-w-md rounded-xl border border-purple-700/20 bg-gray-800/50 p-8 shadow-lg backdrop-blur-md">
-        <h1 className="text-center text-2xl font-semibold text-white mb-2">Welcome Back</h1>
-        <p className="mb-8 text-center text-sm text-gray-300">
-          Sign in to continue to WebSynx
-        </p>
-        
-        <div className="space-y-4">
-          <button
-            onClick={() => handleOAuthSignIn('google')}
-            className="group flex w-full items-center justify-center gap-2 rounded-lg border border-purple-700/20 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-white transition-all hover:border-purple-700/40 hover:bg-gray-800/90 hover:shadow-sm"
-          >
-            <Chrome className="h-4 w-4 text-gray-300 transition-colors group-hover:text-white" />
-            Sign in with Google
-          </button>
-          
-          <button
-            onClick={() => handleOAuthSignIn('github')}
-            className="group flex w-full items-center justify-center gap-2 rounded-lg border border-purple-700/20 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-white transition-all hover:border-purple-700/40 hover:bg-gray-800/90 hover:shadow-sm"
-          >
-            <Github className="h-4 w-4 text-gray-300 transition-colors group-hover:text-white" />
-            Sign in with GitHub
-          </button>
+        <h2 className="mb-6 text-center text-2xl font-bold text-white">Login to WebSynx</h2>
+
+        {/* Placeholder for OAuth buttons if you implement them with another provider */}
+        {/* <div className="mb-6 grid grid-cols-2 gap-4">
+          <Button variant="outline" onClick={handleGitHubLogin} disabled={loading} className="w-full flex items-center justify-center gap-2 border-gray-600 hover:bg-gray-700/50 text-white">
+            <Github className="h-5 w-5" />
+            GitHub
+          </Button>
+          <Button variant="outline" onClick={handleGoogleLogin} disabled={loading} className="w-full flex items-center justify-center gap-2 border-gray-600 hover:bg-gray-700/50 text-white">
+            <Chrome className="h-5 w-5" />
+            Google
+          </Button>
         </div>
+
+        <div className="my-6 flex items-center">
+          <div className="flex-grow border-t border-gray-600"></div>
+          <span className="mx-4 flex-shrink text-xs uppercase text-gray-400">Or continue with</span>
+          <div className="flex-grow border-t border-gray-600"></div>
+        </div> */} 
+
+        <form onSubmit={handleEmailLogin} className="space-y-4">
+          <div>
+            <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-300">Email</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              className="w-full rounded-md border-gray-600 bg-gray-700/50 px-3 py-2 text-white focus:border-purple-500 focus:ring-purple-500"
+            />
+          </div>
+          <div>
+             {/* Placeholder for Password Input */}
+            <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-300">Password</label>
+             <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full rounded-md border-gray-600 bg-gray-700/50 px-3 py-2 text-white focus:border-purple-500 focus:ring-purple-500"
+            />
+          </div>
+          <button type="submit" disabled={loading} className="w-full rounded-md bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2 font-semibold text-white shadow-lg transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+            {loading ? (
+               <span className="animate-pulse">Logging in...</span>
+             ) : (
+               'Login'
+             )}
+          </button>
+        </form>
+
+        {/* Placeholder for Sign Up Link */}
+        {/* <p className="mt-6 text-center text-sm text-gray-400">
+          Don't have an account?{" "}
+          <a href="/signup" className="font-medium text-purple-400 hover:text-purple-300">
+            Sign up
+          </a>
+        </p> */} 
       </div>
     </div>
   );

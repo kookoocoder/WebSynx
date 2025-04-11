@@ -11,7 +11,7 @@ import * as Select from "@radix-ui/react-select";
 import assert from "assert";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, Code, Layout, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { use, useState, useRef, useTransition, useEffect } from "react";
 import { createChat } from "./actions";
 import { Context } from "./providers";
@@ -28,6 +28,7 @@ import { nanoid } from "nanoid";
 export default function Home() {
   const { setStreamPromise } = use(Context);
   const router = useRouter();
+  const pathname = usePathname();
 
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState(MODELS[0].value);
@@ -38,6 +39,7 @@ export default function Home() {
   const selectedModel = MODELS.find((m) => m.value === model);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const splineRef = useRef<any>(null);
+  const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [isPending, startTransition] = useTransition();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -59,6 +61,13 @@ export default function Home() {
     
     return () => clearTimeout(timer);
   }, [splineLoaded]);
+
+  useEffect(() => {
+    if (pathname === '/' && promptTextareaRef.current) {
+      console.log("Home page: Pathname is /, focusing prompt input.");
+      promptTextareaRef.current.focus();
+    }
+  }, [pathname]);
 
   const onSplineLoad = (splineApp: any) => {
     console.log("Spline loaded successfully");
@@ -302,6 +311,7 @@ export default function Home() {
                       </p>
                     </div>
                     <textarea
+                      ref={promptTextareaRef}
                       placeholder="Describe the website you want to create..."
                       required
                       name="prompt"

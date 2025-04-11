@@ -1,19 +1,28 @@
 import type { Metadata } from "next";
 import PlausibleProvider from "next-plausible";
 import "./globals.css";
+import { Inter } from "next/font/google";
+// import { ThemeProvider } from "@/components/theme-provider"; // Commented out - Fix path
+import { cn } from "@/lib/utils";
 
-let title = "WebSynx";
-let description = "Generate your next app with WebSynx";
-let url = "https://websynx.vercel.app";
-let ogimage = "https://websynx.vercel.app/og-image.png";
-let sitename = "websynx.vercel.app";
+// Define the font instance
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter", // Ensure this matches CSS variable if used
+});
+
+let title = "WebSynx - AI Chat";
+let description = "Interact with advanced AI models.";
+let url = "https://websynx.vercel.app"; // Ensure this is your production URL
+let ogimage = `${url}/og-image.png`; // Use template literal for consistency
+let sitename = "WebSynx"; // Or your actual site name
 
 export const metadata: Metadata = {
   metadataBase: new URL(url),
   title,
   description,
   icons: {
-    icon: "/websynx-logo.png",
+    icon: "/websynx-logo.png", // Ensure this path is correct in /public
   },
   openGraph: {
     images: [ogimage],
@@ -38,13 +47,31 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full scrollbar-hide">
+    <html lang="en" suppressHydrationWarning className="h-full scrollbar-hide">
+      {/* Ensure no whitespace directly inside head */}
       <head>
-        <PlausibleProvider domain="llamacoder.io" />
+        <PlausibleProvider domain="websynx.vercel.app" />
+        {/* Add other essential head elements like charset, viewport if needed */}
+        {/* <meta charSet="utf-8" /> */}
+        {/* <meta name="viewport" content="width=device-width, initial-scale=1" /> */}
       </head>
-
-      <body suppressHydrationWarning className="flex min-h-full flex-col bg-gray-900 text-gray-100 antialiased relative scrollbar-hide">
-        {children}
+      {/* Only ONE body tag should exist, defined here */}
+      <body
+        className={cn(
+          "min-h-screen bg-background font-sans antialiased",
+          "bg-gray-900 text-gray-100", // Base styles
+          inter.variable // Use the defined font variable
+        )}
+      >
+         {/* ThemeProvider wrapper commented out - Fix path and uncomment later */}
+         {/* <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        > */} 
+          {children} {/* Child components should NOT render <html>, <head>, or <body> */}
+         {/* </ThemeProvider> */} 
       </body>
     </html>
   );

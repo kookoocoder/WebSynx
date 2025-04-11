@@ -1,184 +1,106 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef } from 'react';
 import Link from "next/link";
-import { User, LogOut, ChevronDown } from "lucide-react";
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { LogOut, ChevronDown, User as UserIcon } from "lucide-react";
+import { User } from '@supabase/supabase-js';
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import Image from "next/image";
+// import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"; // Commented out - Fix path
+// import { Button } from "@/components/ui/button"; // Commented out - Fix path
+// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Commented out - Fix path
 
 export function UserAuthNav() {
-  const supabase = createClientComponentClient();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null); // Using placeholder state
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch user session on component mount
   useEffect(() => {
-    async function getSession() {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          throw error;
-        }
-        
-        if (session?.user) {
-          // Get profile information
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+    console.log("UserAuthNav: Component mounted, checking auth state (placeholder).");
+    setUser(null); // Default to logged out for now
+  }, []);
 
-          setUser({
-            ...session.user,
-            profile
-          });
-        }
-      } catch (error) {
-        console.error("Error getting session:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    getSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-      } else {
-        setUser(null);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
-
-  // Handle logout
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        throw error;
-      }
-      
-      setUser(null);
-      router.push('/');
-      setIsOpen(false);
-    } catch (error: any) {
-      toast({
-        title: "Error signing out",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+  const handleLogout = () => {
+    console.log("UserAuthNav: handleLogout triggered (placeholder).");
+    setUser(null);
+    setIsOpen(false);
+    toast({ title: "Logged Out (Placeholder)", description: "You have been logged out." });
   };
 
-  // Toggle dropdown
-  const toggleDropdown = () => setIsOpen(!isOpen);
-
-  // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [dropdownRef]);
 
-  if (loading) {
-    return <div className="w-8 h-8"></div>; // Placeholder during loading
-  }
+  const isLoggedIn = !!user;
 
   return (
     <div className="flex items-center gap-2">
-      {!user ? (
-        <Link
-          href="/login"
-          className="rounded-full bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 px-4 py-1.5 text-sm text-white shadow-sm transition-all hover:opacity-90 hover:shadow-purple-700/20 hover:shadow"
-        >
-          Login
-        </Link>
-      ) : (
+      {isLoggedIn ? (
         <div className="relative" ref={dropdownRef}>
+           {/* Placeholder for User Dropdown - Replace with actual DropdownMenu */} 
           <button
-            onClick={toggleDropdown}
-            className="flex items-center gap-1 rounded-full border border-purple-700/30 bg-gray-800/50 backdrop-blur-[1px] pl-1 pr-3 py-1 text-sm text-gray-200 hover:border-purple-600/50 transition-all hover:shadow-sm"
-            aria-expanded={isOpen}
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center gap-1 rounded-full p-1 transition-colors hover:bg-gray-100 focus:outline-none dark:hover:bg-zinc-800"
+            aria-label="User menu"
           >
-            <div className="flex h-6 w-6 items-center justify-center rounded-full overflow-hidden">
-              {user.profile?.avatar_url ? (
-                <Image 
-                  width={24}
-                  height={24}
-                  src={user.profile.avatar_url} 
-                  alt={user.profile?.full_name || user.email || 'User Avatar'} 
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-full w-full bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 flex items-center justify-center">
-                  <User className="h-3.5 w-3.5 text-white" />
-                </div>
-              )}
-            </div>
-            <span className="ml-1.5 font-medium truncate max-w-[100px]">
-              {user.profile?.full_name || user.email?.split('@')[0] || 'User'}
+             {/* Placeholder for Avatar - Replace with actual Avatar component */}
+             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-300 dark:bg-gray-600">
+               {user?.user_metadata?.avatar_url ? (
+                 <img src={user.user_metadata.avatar_url} alt={user.email || "User avatar"} className="h-full w-full rounded-full object-cover" />
+               ) : (
+                 <UserIcon className="h-4 w-4 text-gray-800 dark:text-gray-200" />
+               )}
+             </div>
+            <span className="hidden text-sm font-medium md:block text-gray-900 dark:text-white">
+              {user?.email || 'Account'}
             </span>
-            <ChevronDown className={`h-3.5 w-3.5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`h-4 w-4 text-gray-500 transition-transform ${
+                isOpen ? "rotate-180" : ""
+              }`}
+            />
           </button>
-          
-          {isOpen && (
-            <div className="absolute right-0 z-20 mt-1.5 w-56 rounded-xl border border-purple-700/20 bg-gray-800/90 py-1.5 shadow-lg backdrop-blur-sm animate-in fade-in zoom-in-95 duration-150 origin-top-right before:absolute before:-top-1 before:right-3 before:h-2 before:w-2 before:rotate-45 before:rounded-sm before:bg-gray-800/90 before:border-l before:border-t before:border-purple-700/20">
-              <div className="px-3 py-2.5 border-b border-purple-700/20">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden">
-                    {user.profile?.avatar_url ? (
-                      <Image 
-                        width={36}
-                        height={36}
-                        src={user.profile.avatar_url} 
-                        alt={user.profile?.full_name || user.email || 'User Avatar'} 
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 flex items-center justify-center">
-                        <User className="h-4 w-4 text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm text-white font-medium truncate max-w-[180px]">{user.profile?.full_name || 'User'}</p>
-                    <p className="text-xs text-purple-300 truncate max-w-[180px]">{user.email}</p>
-                  </div>
-                </div>
+           {/* Placeholder for Dropdown Content - Replace with actual DropdownMenuContent */} 
+           {isOpen && (
+            <div className="absolute right-0 z-10 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-zinc-800 py-1">
+              <div className="px-3 py-2 border-b border-gray-200 dark:border-zinc-700">
+                 <p className="text-sm font-medium text-gray-900 dark:text-white">Account</p> 
+                 <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {user?.email || "No email available"}
+                 </p> 
               </div>
-              
-              <div className="pt-1.5 px-1">
-                <button 
-                  onClick={handleLogout} 
-                  className="group flex w-full items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:bg-purple-700/10 rounded-lg mx-auto my-0.5 hover:text-purple-200 transition-colors duration-150"
-                >
-                  <LogOut className="h-4 w-4 text-purple-400 group-hover:translate-x-0.5 transition-transform duration-200" />
-                  <span>Logout</span>
-                </button>
-              </div>
+               {/* Placeholder for DropdownMenuItem - Replace with actual DropdownMenuItem */}
+               <button
+                 onClick={handleLogout}
+                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-zinc-700"
+               >
+                 <LogOut className="h-4 w-4" />
+                 <span>Logout</span>
+               </button>
             </div>
           )}
         </div>
+      ) : (
+        <>
+           {/* Placeholder for Login Button - Replace with actual Button component */}
+          <Link href="/login">
+             <button className="px-3 py-1.5 text-sm border rounded-md hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800">
+               Login
+             </button> 
+          </Link>
+           {/* Placeholder for Sign Up button */}
+           {/* <Link href="/signup"><button>Sign Up</button></Link> */} 
+        </>
       )}
     </div>
   );
