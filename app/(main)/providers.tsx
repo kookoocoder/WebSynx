@@ -25,7 +25,7 @@ export default function Providers({
     _setStreamPromise(promise);
   };
 
-  // Add error suppression for <think> tag errors
+  // Add error suppression for <think> tag and rate limit errors
   useEffect(() => {
     // Store the original console.error function
     const originalConsoleError = console.error;
@@ -35,23 +35,34 @@ export default function Providers({
       // TEMPORARY LOGGING: Log all arguments coming to console.error
       console.log("Suppressor Check - Incoming args:", args);
       
-      const message = args[0];
+      const errorOrMessage = args[0];
+      let messageString = "";
 
-      // Check if this is the <think> tag error we want to suppress
+      if (typeof errorOrMessage === 'string') {
+        messageString = errorOrMessage;
+      } else if (errorOrMessage && typeof errorOrMessage === 'object' && typeof errorOrMessage.message === 'string') {
+        // Handle cases where the first arg is an Error object
+        messageString = errorOrMessage.message;
+      }
+
+      // Check if this is one of the errors we want to suppress
       if (
-        message && 
-        typeof message === 'string' && 
-        (message.includes("The tag <think> is unrecognized in this browser") ||
-         (message.includes("React.createElement: type is invalid") && args[1]?.includes("<think>")))
+        messageString && 
+        ( // Check for <think> tag errors
+          messageString.includes("The tag <think> is unrecognized in this browser") ||
+          (messageString.includes("React.createElement: type is invalid") && args[1]?.includes("<think>")) ||
+          // Check for Supabase rate limit error
+          messageString.includes("Request rate limit reached")
+        )
       ) {
         // TEMPORARY LOGGING: Indicate suppression
-        console.log("Suppressor Check: Matched and suppressing <think> error.");
+        console.log("Suppressor Check: Matched and suppressing known error:", messageString);
         // Suppress this specific error
         return;
       }
       
       // TEMPORARY LOGGING: Indicate passthrough
-      console.log("Suppressor Check: Did not match, passing error through.");
+      console.log("Suppressor Check: Did not match, passing error through:", args);
       // Let other errors pass through to the original console.error
       return originalConsoleError.apply(console, args);
     };
