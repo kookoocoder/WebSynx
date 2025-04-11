@@ -159,6 +159,26 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
     };
   }, [isExpanded]); // Added isExpanded dependency
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Find the sidebar element
+      const sidebarElement = document.querySelector('aside');
+      
+      // If sidebar is expanded and click is outside sidebar
+      if (isExpanded && sidebarElement && !sidebarElement.contains(event.target as Node)) {
+        setIsExpanded(false);
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isExpanded]);
+
   return (
     <>
       {/* Overlay for mobile/tablet view when sidebar is open */} 
