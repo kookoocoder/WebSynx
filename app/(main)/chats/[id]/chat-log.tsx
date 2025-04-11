@@ -251,8 +251,6 @@ function ImagePreview({ url }: { url: string }) {
               height={40}
               src={url} 
               alt="Uploaded preview" 
-              width={40}
-              height={40}
               className="h-10 w-10 object-cover rounded-sm"
             />
           </a>
@@ -265,12 +263,10 @@ function ImagePreview({ url }: { url: string }) {
             align="center"
           >
             <Image 
-              width={512}
+              width={448}
               height={256}
               src={url} 
               alt="Uploaded image preview" 
-              width={448}
-              height={256}
               className="max-h-64 max-w-md rounded object-contain"
               style={{ width: 'auto', height: 'auto' }}
             />

@@ -32,17 +32,26 @@ export default function Providers({
     
     // Replace console.error with a filtered version
     console.error = function (...args) {
+      // TEMPORARY LOGGING: Log all arguments coming to console.error
+      console.log("Suppressor Check - Incoming args:", args);
+      
+      const message = args[0];
+
       // Check if this is the <think> tag error we want to suppress
       if (
-        args[0] && 
-        typeof args[0] === 'string' && 
-        (args[0].includes("The tag <think> is unrecognized in this browser") ||
-         args[0].includes("React.createElement: type is invalid") && args[1]?.includes("<think>"))
+        message && 
+        typeof message === 'string' && 
+        (message.includes("The tag <think> is unrecognized in this browser") ||
+         (message.includes("React.createElement: type is invalid") && args[1]?.includes("<think>")))
       ) {
+        // TEMPORARY LOGGING: Indicate suppression
+        console.log("Suppressor Check: Matched and suppressing <think> error.");
         // Suppress this specific error
         return;
       }
       
+      // TEMPORARY LOGGING: Indicate passthrough
+      console.log("Suppressor Check: Did not match, passing error through.");
       // Let other errors pass through to the original console.error
       return originalConsoleError.apply(console, args);
     };

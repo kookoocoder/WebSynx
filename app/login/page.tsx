@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from "@/hooks/use-toast";
 import { Github, Chrome } from 'lucide-react'; // Keep icons if used for other buttons
 import Image from 'next/image';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function LoginPage() {
   // const supabase = createClientComponentClient(); // Removed
@@ -20,28 +21,32 @@ export default function LoginPage() {
   const handleEmailLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
-    console.log("Login attempt with:", { email }); // Log attempt
 
-    // Placeholder for your custom email/password authentication logic
     try {
-      // Replace this with your actual authentication call
-      // const response = await myAuthApi.loginWithEmailPassword(email, password);
-      // if (response.success) {
-      //   toast({ title: "Login Successful (Placeholder)" });
-      //   router.push('/'); // Redirect to dashboard or home
-      // } else {
-      //   throw new Error(response.message || "Invalid credentials");
-      // }
-      
-      // Simulate an error for now
-       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-       throw new Error("Email/Password login not implemented yet.");
+      // Attempt to sign in
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
+      if (error) {
+        // Let Supabase handle the error message (including "Email not confirmed")
+        throw error;
+      }
+
+      // If successful
+      toast({ 
+        title: "Login Successful",
+        description: "Welcome back!"
+      });
+      
+      router.push('/'); 
     } catch (error: any) {
-      console.error("Login failed (Placeholder):", error);
+      console.error("Login failed:", error);
+      // Display the error message from Supabase or a generic one
       toast({
-        title: "Login Failed (Placeholder)",
-        description: error.message || "An unexpected error occurred.",
+        title: "Login Failed",
+        description: error.message || "Invalid credentials or an unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
@@ -100,8 +105,14 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 p-4">
       <div className="w-full max-w-md rounded-xl border border-purple-700/30 bg-gray-800/50 p-8 shadow-2xl shadow-purple-500/10 backdrop-blur-lg">
         <div className="mb-6 flex justify-center">
-           {/* Replace with your logo */}
-          <Image src="/websynx-logo.png" alt="WebSynx Logo" width={64} height={64} className="rounded-full" /> 
+          <Image 
+            src="/websynx-logo.png" 
+            alt="WebSynx Logo" 
+            width={64} 
+            height={64} 
+            className="rounded-full h-auto"
+            priority
+          /> 
         </div>
         <h2 className="mb-6 text-center text-2xl font-bold text-white">Login to WebSynx</h2>
 
@@ -137,11 +148,11 @@ export default function LoginPage() {
             />
           </div>
           <div>
-             {/* Placeholder for Password Input */}
             <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-300">Password</label>
              <input
               id="password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               placeholder="••••••••"

@@ -8,8 +8,8 @@ import { useState, useEffect, useMemo, ReactNode } from 'react';
 import Sidebar from '@/components/sidebar';
 import { usePathname, useRouter } from 'next/navigation';
 import { DemoControls } from '@/components/demo-controls';
-// import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'; // Import Supabase client
-// import { Session } from '@supabase/supabase-js'; // Removed Session type import
+import { supabase } from '@/lib/supabaseClient';
+import { Session } from '@supabase/supabase-js'; // Import Session type
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -20,60 +20,56 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  // const supabase = useMemo(() => createClientComponentClient(), []); // Removed Supabase client initialization
-  const [loading, setLoading] = useState(true); // Keep loading state for potential alternative auth check
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true); // Start as loading
   
   useEffect(() => {
-    // Placeholder for alternative authentication check
-    const checkAuthentication = async () => {
-      console.log("MainLayout: Checking authentication (placeholder)");
-      // Replace this with your actual authentication logic
-      // e.g., check for a token, call your auth API
-      const isAuthenticated = false; // Simulate logged out state for now
-
-      if (!isAuthenticated) {
-        console.log("MainLayout: User not authenticated, redirecting to /login (placeholder)");
-        // router.push('/login'); // Uncomment to redirect if not authenticated
-        setLoading(false); // Stop loading after check
-      } else {
-        console.log("MainLayout: User authenticated (placeholder)");
-        // Optionally fetch user data here if needed for the layout
-        setLoading(false); // Stop loading after check
+    let isMounted = true; // Track component mount status
+    
+    // Function to check the session initially
+    const checkInitialSession = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        if (isMounted) {
+          setSession(initialSession);
+          // If no session found client-side after middleware should have protected, redirect
+          if (!initialSession) {
+            console.warn("MainLayout: No session found client-side, redirecting to /login.");
+            router.push('/login');
+          } else {
+            setLoading(false); // We have a session, stop loading
+          }
+        }
+      } catch (error) {
+        console.error("MainLayout: Error fetching initial session:", error);
+        if (isMounted) {
+          router.push('/login'); // Redirect on error
+        }
       }
     };
 
-    checkAuthentication();
+    // Listen for auth state changes (e.g., login, logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      if (isMounted) {
+        setSession(currentSession);
+        setLoading(false); // Auth state confirmed, stop loading
+        if (!currentSession) {
+          // Redirect to login if user logs out
+          router.push('/login');
+        }
+      }
+    });
 
-    // --- Removed Supabase Auth Logic ---
-    // const getSessionData = async () => {
-    //   try {
-    //     const { data: { session } } = await supabase.auth.getSession();
-    //     setSession(session);
-    //     if (!session) {
-    //       router.push('/login');
-    //     }
-    //   } catch (error) {
-    //     console.error("Error fetching session:", error);
-    //     router.push('/login'); // Redirect on error
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // getSessionData();
-    //
-    // const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-    //   setSession(session);
-    //   if (!session) {
-    //     router.push('/login');
-    //   }
-    // });
-    //
-    // return () => {
-    //   subscription?.unsubscribe();
-    // };
-     // --- End of Removed Supabase Auth Logic ---
+    // Check the initial session state when the component mounts
+    checkInitialSession();
 
-  }, [router]); // Removed supabase from dependencies
+    // Cleanup listener and mount status on unmount
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
+    
+  }, [supabase, router]);
 
   const onSplineLoad = () => {
     console.log("Spline loaded successfully");
@@ -84,8 +80,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isInChatPage = pathname.includes('/chats/');
   const initiallyExpanded = !isInChatPage;
 
+  // Show loading indicator until the session state is confirmed client-side
   if (loading) {
-    // Optional: Render a loading spinner or skeleton screen
     return (
       <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
         Loading application...
@@ -93,14 +89,17 @@ export default function MainLayout({ children }: MainLayoutProps) {
     );
   }
 
-  // Removed check: If no session, don't render layout (handled by redirect placeholder)
-  // if (!session) {
-  //   return null; // Or a redirect component
-  // }
+  // If loading is finished but there's still no session, redirect (extra safety)
+  if (!session) {
+     console.log("MainLayout: Render check - No session, redirecting.");
+     // router.push('/login'); // This might be too aggressive, rely on initial check/listener
+     return null; // Render nothing while redirect happens
+  }
 
+  // Render the main layout content only if loading is false AND session exists
   return (
     <Providers>
-      <body suppressHydrationWarning className="flex min-h-full flex-col bg-gray-900 text-gray-100 antialiased relative scrollbar-hide">
+      <div className="flex min-h-full flex-col bg-gray-900 text-gray-100 antialiased relative scrollbar-hide">
         <div className="fixed inset-0 z-0">
           {!splineLoaded && (
             <div className="w-full h-full bg-gradient-to-b from-purple-800/5 via-gray-950/90 to-black"></div>
@@ -124,7 +123,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
         <Toaster />
         <DemoControls />
-      </body>
+      </div>
     </Providers>
   );
 }

@@ -1,6 +1,8 @@
 "use server";
 
-import { supabase /*, getSupabaseAdmin */ } from "@/lib/supabaseClient"; // Choose client based on RLS needs
+import { supabase /*, getSupabaseAdmin */ } from "@/lib/supabaseClient"; // Standard client for RLS
+import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // Import helper for server actions
+import { cookies } from 'next/headers'; // Import cookies helper
 import {
   getMainCodingPrompt,
   screenshotToCodePrompt,
@@ -25,23 +27,35 @@ export async function createChat(
   quality: "high" | "low",
   screenshotUrl: string | undefined,
 ) {
-  // Use the standard Supabase client (or admin if needed)
-  const dbClient = supabase; // or getSupabaseAdmin(); if RLS bypass needed
+  // Create a Supabase client for Server Actions to get user session if available
+  const supabaseServerClient = createServerActionClient({ cookies });
+  
+  // Try to get the user, but don't require it
+  const { data } = await supabaseServerClient.auth.getUser();
+  const user = data?.user; // May be null if not logged in
+  
+  // Prepare chat object with or without user_id
+  const chatObject: any = {
+    model,
+    quality,
+    prompt,
+    title: "", 
+    shadcn: true, 
+    "websynxVersion": "v2"
+  };
+  
+  // Only add user_id if a user is logged in
+  if (user) {
+    chatObject.user_id = user.id;
+  }
 
-  // Create chat record using Supabase
+  // Create chat record using the SERVER ACTION client
   const chatData = await handleSupabaseError(
-    dbClient
+    supabaseServerClient
       .from('chats')
-      .insert({
-        model,
-        quality,
-        prompt,
-        title: "", // Title is updated later
-        shadcn: true, // Assuming this is constant based on original code
-        "websynxVersion": "v2" // Match schema default/column name
-      })
-      .select('id') // Select only the ID initially
-      .single(), // Expecting a single row back
+      .insert(chatObject)
+      .select('id') 
+      .single(), 
     'insert chat'
   );
 
@@ -168,12 +182,12 @@ export async function createChat(
     userMessage = prompt;
   }
 
-  // Update chat with title and create initial messages using Supabase
+  // Update chat with title and create initial messages using the SERVER ACTION client
   const systemMessageContent = getMainCodingPrompt(mostSimilarExample);
 
-  // Insert initial messages
+  // Insert initial messages using the SERVER ACTION client
   await handleSupabaseError(
-    dbClient
+    supabaseServerClient // Use server client here too
       .from('messages')
       .insert([
         { role: "system", content: systemMessageContent, position: 0, chat_id: chatId },
@@ -182,19 +196,18 @@ export async function createChat(
     'insert initial messages'
   );
 
-  // Update the chat title
+  // Update the chat title using the SERVER ACTION client
   await handleSupabaseError(
-    dbClient
+    supabaseServerClient // Use server client here too
       .from('chats')
       .update({ title: title })
       .eq('id', chatId),
     'update chat title'
   );
 
-  // Find the last message (user message we just inserted) to return its ID
-  // We know its position is 1
+  // Find the last message using the SERVER ACTION client
   const lastMessageData = await handleSupabaseError(
-    dbClient
+    supabaseServerClient // Use server client here too
       .from('messages')
       .select('id')
       .eq('chat_id', chatId)
@@ -216,38 +229,63 @@ export async function createMessage(
   text: string,
   role: "assistant" | "user",
 ) {
-  const dbClient = supabase; // or getSupabaseAdmin();
+  const supabaseServerClient = createServerActionClient({ cookies }); // Create server client
+  
+  // Try to get the user, but don't require it
+  const { data } = await supabaseServerClient.auth.getUser();
+  const user = data?.user; // May be null if not logged in
+  
+  // Skip user ownership checks if no user is logged in
+  if (user) {
+    // Optionally check if the chat belongs to this user before adding a message
+    try {
+      const { data: chatOwner } = await supabaseServerClient
+        .from('chats')
+        .select('user_id')
+        .eq('id', chatId)
+        .single();
+      
+      // If chat has an owner (user_id) and it's not the current user, don't allow them to add messages
+      if (chatOwner?.user_id && chatOwner.user_id !== user.id) {
+        console.warn("User trying to add message to someone else's chat");
+        // You could throw an error here, or just log and continue
+        // throw new Error("Cannot create message in someone else's chat");
+      }
+    } catch (error) {
+      // Ignore error, continue with message creation
+    }
+  }
 
   // Find the highest current position for the chat
-  const { data: maxPosData, error: maxPosError } = await dbClient
+  const { data: maxPosData, error: maxPosError } = await supabaseServerClient
     .from('messages')
     .select('position')
     .eq('chat_id', chatId)
     .order('position', { ascending: false })
     .limit(1)
-    .maybeSingle(); // Use maybeSingle as there might be no messages yet (though unlikely here)
+    .maybeSingle(); 
 
   if (maxPosError) {
     console.error(`Supabase Error [find max position]:`, maxPosError);
     throw new Error(`Supabase operation failed: find max position - ${maxPosError.message}`);
   }
 
-  const maxPosition = maxPosData?.position ?? -1; // Default to -1 if no messages exist
+  const maxPosition = maxPosData?.position ?? -1; 
 
   // Insert the new message
   const newMessageData = await handleSupabaseError(
-    dbClient
+    supabaseServerClient
       .from('messages')
       .insert({
         role,
         content: text,
         position: maxPosition + 1,
-        chat_id: chatId, // Ensure correct column name
+        chat_id: chatId, 
       })
-      .select() // Select all columns of the new message
-      .single(), // Expecting a single row back
+      .select() 
+      .single(), 
     'insert message'
   );
 
-  return newMessageData; // Return the full message object as returned by Supabase
+  return newMessageData; 
 }
