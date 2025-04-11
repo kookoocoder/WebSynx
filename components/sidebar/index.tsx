@@ -195,7 +195,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
         animate={{ width: isExpanded ? 256 : 72 }} // Animate width
         transition={{ duration: 0.2, ease: "easeInOut" }}
         className={cn(
-          "fixed left-0 top-0 z-40 flex h-full flex-col bg-gradient-to-b from-gray-900 to-black text-white transition-transform duration-300 ease-in-out lg:translate-x-0",
+          "fixed left-0 top-0 z-40 flex h-full flex-col bg-gray-800/50 backdrop-blur-sm text-white transition-transform duration-300 ease-in-out lg:translate-x-0",
           isExpanded ? "translate-x-0" : "-translate-x-full", // Handle mobile slide-in/out
           "border-r border-purple-700/20"
         )}
@@ -205,8 +205,14 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
           <div className="flex items-center justify-between p-3 border-b border-purple-700/20 h-16">
             {isExpanded && (
               <Link href="/" className="flex items-center gap-2">
-                {/* Replace with your actual logo */}
-                 <MessageSquare className="h-6 w-6 text-purple-400" /> 
+                {/* Logo */}
+                <Image 
+                  src="/websynx-logo.png" 
+                  alt="WebSynx Logo"
+                  width={24}
+                  height={24}
+                  className="h-6 w-6" 
+                />
                 <span className="text-lg font-semibold">WebSynx</span>
               </Link>
             )}
