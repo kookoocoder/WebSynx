@@ -10,10 +10,15 @@ import { Code, Eye, Image as ImageIcon } from "lucide-react";
 import * as Tooltip from '@radix-ui/react-tooltip';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import Image from 'next/image';
+import ThinkingPill from "@/components/thinking-pill";
+import React from "react";
+import Image from "next/image";
 
 // Regex to find markdown image links like [Image](url)
 const imageLinkRegex = /\n\n\[Image\]\(([^)]+)\)/g;
+
+// Regex to find <think>content</think> tags
+const thinkTagRegex = /<think>([\s\S]*?)<\/think>/g;
 
 export default function ChatLog({
   chat,
@@ -106,10 +111,38 @@ function AssistantMessage({
   isActive?: boolean;
   onMessageClick?: (v: Message) => void;
 }) {
-  const parts = splitByFirstCodeFence(content);
+  // Handle <think> tags separately
+  let processedContent = content;
+  const [isThinking, setIsThinking] = React.useState(false);
+  const hasThinkTag = thinkTagRegex.test(content);
+  
+  React.useEffect(() => {
+    if (hasThinkTag) {
+      setIsThinking(true);
+      // Schedule to set isThinking to false when the streaming response 
+      // should be complete or close to complete
+      const timer = setTimeout(() => {
+        setIsThinking(false);
+      }, 3000); // Adjust this timeout as needed
+      
+      return () => clearTimeout(timer);
+    }
+  }, [hasThinkTag, content]);
+  
+  // Extract thinking parts and remove from main content
+  processedContent = processedContent.replace(thinkTagRegex, () => {
+    return '';
+  });
+  
+  const parts = splitByFirstCodeFence(processedContent);
 
   return (
     <div>
+      {/* Render thinking pill if needed */}
+      {hasThinkTag && (
+        <ThinkingPill isThinking={isThinking} />
+      )}
+      
       {parts.map((part, i) => (
         <div key={i}>
           {part.type === "text" ? (
@@ -214,6 +247,8 @@ function ImagePreview({ url }: { url: string }) {
             className="inline-block rounded border border-purple-400/30 p-1 bg-purple-900/30 hover:border-purple-400/50 transition-all"
           >
             <Image 
+              width={40}
+              height={40}
               src={url} 
               alt="Uploaded preview" 
               width={40}
@@ -230,12 +265,14 @@ function ImagePreview({ url }: { url: string }) {
             align="center"
           >
             <Image 
+              width={512}
+              height={256}
               src={url} 
               alt="Uploaded image preview" 
               width={448}
               height={256}
               className="max-h-64 max-w-md rounded object-contain"
-              style={{ objectFit: "contain", maxWidth: '28rem', maxHeight: '16rem' }}
+              style={{ width: 'auto', height: 'auto' }}
             />
             <Tooltip.Arrow className="fill-gray-800/90" />
           </Tooltip.Content>

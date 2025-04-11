@@ -4,7 +4,7 @@ import ArrowRightIcon from "@/components/icons/arrow-right";
 import Spinner from "@/components/spinner";
 import assert from "assert";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, DragEvent } from "react";
 import { createMessage } from "../../actions";
 import { type Chat } from "./page";
 import * as Select from "@radix-ui/react-select";
@@ -14,7 +14,7 @@ import UploadIcon from "@/components/icons/upload-icon";
 import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import * as Tooltip from '@radix-ui/react-tooltip';
-import Image from 'next/image';
+import Image from "next/image";
 
 export default function ChatBox({
   chat,
@@ -22,7 +22,7 @@ export default function ChatBox({
   isStreaming,
 }: {
   chat: Chat;
-  onNewStreamPromise: (v: Promise<ReadableStream>) => void;
+  onNewStreamPromise: (v: Promise<Response>) => void;
   isStreaming: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -33,8 +33,9 @@ export default function ChatBox({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState(chat.model || MODELS[0].value);
-  const [screenshotUrl, setScreenshotUrl] = useState<string | undefined>(undefined);
+  const [screenshotUrls, setScreenshotUrls] = useState<string[]>([]);
   const [screenshotLoading, setScreenshotLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const selectedModel = MODELS.find((m) => m.value === model);
   
   const textareaResizePrompt = prompt
@@ -53,12 +54,8 @@ export default function ChatBox({
     }
   }, [disabled]);
 
-  const handleScreenshotUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (prompt.length === 0) setPrompt(`Analyze this image and provide insights.`);
-    setScreenshotLoading(true);
+  const handleSingleScreenshotUpload = async (file: File): Promise<string | null> => {
+    if (!file) return null;
 
     try {
       const fileExt = file.name.split('.').pop();
@@ -80,17 +77,89 @@ export default function ChatBox({
       if (!urlData?.publicUrl) {
         throw new Error("Could not get public URL for uploaded file.");
       }
-
-      setScreenshotUrl(urlData.publicUrl);
+      
+      return urlData.publicUrl;
 
     } catch (error) {
       console.error("Error uploading screenshot:", error);
-      setScreenshotUrl(undefined);
-      if (fileInputRef.current) {
+      return null;
+    }
+  };
+  
+  const handleFileInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setScreenshotLoading(true);
+    const uploadPromises = Array.from(files)
+      .filter(file => file.type.startsWith('image/'))
+      .map(file => handleSingleScreenshotUpload(file));
+      
+    const urls = (await Promise.all(uploadPromises)).filter((url): url is string => url !== null);
+    
+    setScreenshotUrls(prevUrls => [...prevUrls, ...urls]);
+    if (prompt.length === 0 && urls.length > 0) setPrompt(`Analyze these images and provide insights.`);
+    setScreenshotLoading(false);
+
+    if (fileInputRef.current) {
         fileInputRef.current.value = "";
-      }
-    } finally {
-      setScreenshotLoading(false);
+    }
+  };
+
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!disabled && !screenshotLoading) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const relatedTarget = e.relatedTarget as Node;
+    const containsRelated = e.currentTarget.contains(relatedTarget);
+    if (!containsRelated) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!disabled && !screenshotLoading) {
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  };
+
+  const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (disabled || screenshotLoading) {
+      return;
+    }
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+       setScreenshotLoading(true);
+       const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+       if (imageFiles.length > 0) {
+           const uploadPromises = imageFiles.map(file => handleSingleScreenshotUpload(file));
+           const urls = (await Promise.all(uploadPromises)).filter((url): url is string => url !== null);
+           
+           setScreenshotUrls(prevUrls => [...prevUrls, ...urls]);
+           if (prompt.length === 0 && urls.length > 0) setPrompt(`Analyze these images and provide insights.`);
+       }
+       setScreenshotLoading(false);
+    }
+  };
+
+  const removeScreenshotUrl = (urlToRemove: string) => {
+    setScreenshotUrls(prevUrls => prevUrls.filter(url => url !== urlToRemove));
+    if (screenshotUrls.length === 1 && prompt === "Analyze these images and provide insights.") {
+        setPrompt("");
     }
   };
 
@@ -100,9 +169,9 @@ export default function ChatBox({
         className="relative flex w-full"
         action={async () => {
           startTransition(async () => {
-            // Include the screenshot URL in the message if available
-            const messageText = screenshotUrl 
-              ? `${prompt}\n\n[Image](${screenshotUrl})`
+            const imageLinks = screenshotUrls.map(url => `[Image](${url})`).join('\n');
+            const messageText = screenshotUrls.length > 0 
+              ? `${prompt}\n\n${imageLinks}`
               : prompt;
               
             const message = await createMessage(chat.id, messageText, "user");
@@ -119,14 +188,14 @@ export default function ChatBox({
               if (!res.body) {
                 throw new Error("No body on response");
               }
-              return res.body;
+              return res;
             });
 
             onNewStreamPromise(streamPromise);
             startTransition(() => {
               router.refresh();
               setPrompt("");
-              setScreenshotUrl(undefined);
+              setScreenshotUrls([]);
               if (fileInputRef.current) {
                 fileInputRef.current.value = "";
               }
@@ -135,38 +204,49 @@ export default function ChatBox({
         }}
       >
         <fieldset className="w-full" disabled={disabled}>
-          <div className="relative flex flex-col rounded-xl border border-gray-700 bg-gray-800/50 backdrop-blur-sm ml-[35px]">
+          <div 
+            className={`relative flex flex-col rounded-xl border ${isDragging ? 'border-purple-500 bg-purple-900/20' : 'border-gray-700 bg-gray-800/50'} backdrop-blur-sm ml-[35px] transition-colors`}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {isDragging && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-gray-800/80 backdrop-blur-sm z-10">
+                <div className="flex flex-col items-center gap-2">
+                  <ImageIcon className="h-8 w-8 text-purple-400" />
+                  <p className="text-sm text-gray-200">Drop your image here</p>
+                </div>
+              </div>
+            )}
             
-            {/* Image Preview Pill Section */}
             <AnimatePresence>
-              {screenshotUrl && (
+              {screenshotUrls.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, height: 0, marginTop: 0 }}
                   animate={{ opacity: 1, height: "auto", marginTop: "8px" }}
                   exit={{ opacity: 0, height: 0, marginTop: 0 }}
                   transition={{ duration: 0.2 }}
-                  className={`px-3 ${isPending ? "invisible" : ""} overflow-hidden`}
+                  className={`px-3 flex flex-wrap gap-2 ${isPending ? "invisible" : ""} overflow-hidden`}
                 >
-                  <Tooltip.Provider delayDuration={100}>
+                 {screenshotUrls.map((url, index) => (
+                  <Tooltip.Provider key={url} delayDuration={100}>
                     <Tooltip.Root>
                       <Tooltip.Trigger asChild>
                         <div className="inline-flex items-center gap-2 rounded-full border border-purple-700/30 bg-gray-700/50 py-1 pl-1 pr-2 backdrop-blur-sm group relative">
                           <Image
-                            alt="screenshot preview"
-                            src={screenshotUrl}
                             width={20}
                             height={20}
+                            alt={`screenshot preview ${index + 1}`}
+                            src={url}
                             className="h-5 w-5 rounded-full object-cover"
                           />
-                          <span className="text-xs font-medium text-purple-300">Image</span>
+                          <span className="text-xs font-medium text-purple-300">Image {index + 1}</span>
                           <button
                             type="button"
                             className="absolute -right-1 -top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-gray-600 text-gray-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-500/50 hover:text-white"
-                            onClick={() => {
-                              setScreenshotUrl(undefined);
-                              if (fileInputRef.current) fileInputRef.current.value = "";
-                            }}
-                            aria-label="Remove image"
+                            onClick={() => removeScreenshotUrl(url)}
+                            aria-label={`Remove image ${index + 1}`}
                           >
                             <XCircle className="h-3 w-3" />
                           </button>
@@ -180,23 +260,23 @@ export default function ChatBox({
                           align="start"
                         >
                           <Image
-                            src={screenshotUrl} 
-                            alt="Uploaded image preview" 
                             width={320}
                             height={192}
+                            src={url}
+                            alt={`Uploaded image preview ${index + 1}`}
                             className="max-h-48 max-w-xs rounded object-contain"
-                            style={{ objectFit: "contain", maxWidth: '20rem', maxHeight: '12rem' }}
+                            style={{ width: 'auto', height: 'auto' }}
                           />
                           <Tooltip.Arrow className="fill-gray-800/90" />
                         </Tooltip.Content>
                       </Tooltip.Portal>
                     </Tooltip.Root>
                   </Tooltip.Provider>
+                 ))}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Textarea Section */}
             <div className="relative w-full">
               <div className="w-full p-3 pt-0">
                 <p className="invisible min-h-[48px] w-full whitespace-pre-wrap text-white">
@@ -205,13 +285,13 @@ export default function ChatBox({
               </div>
               <textarea
                 ref={textareaRef}
-                placeholder={screenshotUrl ? "Describe the image or ask a question..." : "Ask a follow-up question..."}
+                placeholder={screenshotUrls.length > 0 ? "Describe the image(s) or ask a question..." : "Ask a follow-up question..."}
                 autoFocus={!disabled}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 required
                 name="prompt"
-                className={`peer absolute inset-0 w-full resize-none bg-transparent p-3 text-white placeholder-gray-400 focus:outline-none disabled:opacity-50 ${screenshotUrl ? 'pt-12' : 'pt-3'}`}
+                className={`peer absolute inset-0 w-full resize-none bg-transparent p-3 text-white placeholder-gray-400 focus:outline-none disabled:opacity-50 ${screenshotUrls.length > 0 ? 'pt-14' : 'pt-3'}`}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
@@ -226,32 +306,31 @@ export default function ChatBox({
             <input
               type="file"
               ref={fileInputRef}
-              onChange={handleScreenshotUpload}
+              onChange={handleFileInputChange}
               accept="image/*"
               className="hidden"
+              multiple
             />
             
             <div className="pointer-events-none absolute inset-0 rounded-xl peer-focus:outline peer-focus:outline-offset-0 peer-focus:outline-purple-500" />
 
             <div className="flex items-center justify-between px-3 pb-2.5 pt-2">
-              {/* Left-aligned button: Upload */}
               <button
                 type="button"
                 disabled={isPending || isStreaming || screenshotLoading}
                 className="inline-flex h-7 w-7 items-center justify-center rounded-md p-1 text-gray-400 hover:bg-gray-700/50 hover:text-gray-100 border border-gray-700/40 bg-gray-800/60 backdrop-blur-sm transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-500 disabled:opacity-50 relative group"
                 onClick={() => fileInputRef.current?.click()}
-                aria-label="Upload File"
-                title="Upload File"
+                aria-label="Upload File(s)"
+                title="Upload File(s)"
               >
                 {screenshotLoading ? (
                   <Spinner className="h-3.5 w-3.5 text-purple-400" />
                 ) : (
                   <UploadIcon className="h-3.5 w-3.5" />
                 )}
-                <span className="absolute bottom-full mb-1.5 left-0 px-2 py-1 text-xs text-gray-200 bg-gray-800/90 backdrop-blur-sm border border-gray-700/40 rounded shadow-sm opacity-0 invisible transition-all group-hover:opacity-100 group-hover:visible z-10">Upload File</span>
+                <span className="absolute bottom-full mb-1.5 left-0 px-2 py-1 text-xs text-gray-200 bg-gray-800/90 backdrop-blur-sm border border-gray-700/40 rounded shadow-sm opacity-0 invisible transition-all group-hover:opacity-100 group-hover:visible z-10">Upload File(s)</span>
               </button>
 
-              {/* Right-aligned buttons: Model Selector and Send */}
               <div className="flex items-center gap-2.5">
                 <Select.Root
                   name="model"

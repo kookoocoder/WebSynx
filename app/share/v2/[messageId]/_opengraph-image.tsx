@@ -1,6 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-// REMOVE THIS LINE: // import { getPrisma } from "@/lib/prisma"; // Remove Prisma import
-import { supabase } from "@/lib/supabaseClient"; // Add Supabase client import
+import { supabase } from "@/lib/supabaseClient";
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -17,31 +16,20 @@ export default async function Image({
 }: {
   params: { messageId: string };
 }) {
-  let messageId = params.messageId;
-  // REMOVE THIS LINE: // const prisma = getPrisma(); // Remove Prisma client instantiation
-  // REMOVE THIS LINE: // let message = await prisma.message.findUnique({ // Remove Prisma query
-  // REMOVE THIS LINE: //   where: {
-  // REMOVE THIS LINE: //     id: messageId,
-  // REMOVE THIS LINE: //   },
-  // REMOVE THIS LINE: //   include: {
-  // REMOVE THIS LINE: //     chat: true,
-  // REMOVE THIS LINE: //   },
-  // REMOVE THIS LINE: // });
+  const { messageId } = params;
 
-  // Use Supabase to fetch the message and related chat title
-  const { data: messageData, error: dbError } = await supabase
-    .from('messages') // Assuming table name is 'messages'
+  const { data: messageData, error } = await supabase
+    .from('messages')
     .select(`
       id,
       chat_id,
-      chats ( title ) 
-    `) // Corrected select query, removed comment
+      chats ( title )
+    `)
     .eq('id', messageId)
-    .maybeSingle(); // Use maybeSingle to handle null without error
+    .single();
 
-  if (dbError) {
-    console.error("Error fetching message for OG image:", dbError);
-    // Optionally: return a default error image response here
+  if (error) {
+    console.error("Error fetching message from Supabase:", error);
   }
 
   const backgroundData = await readFile(
@@ -49,10 +37,9 @@ export default async function Image({
   );
   const backgroundSrc = Uint8Array.from(backgroundData).buffer;
 
-  // Use messageData from Supabase, provide default title if not found or error
-  // Type assertion needed because Supabase types might not infer nested relation structure perfectly
-  const chatTitle = (messageData as any)?.chats?.title;
-  let title = chatTitle || "An app generated on LlamaCoder.io";
+  const title = (messageData?.chats && Array.isArray(messageData.chats) && messageData.chats.length > 0)
+    ? messageData.chats[0]?.title
+    : "An app generated on WebSynx";
 
   return new ImageResponse(
     (
@@ -73,7 +60,7 @@ export default async function Image({
             padding: "50px 200px",
           }}
         >
-          {title}
+          {title || "An app generated on WebSynx"}
         </div>
       </div>
     ),

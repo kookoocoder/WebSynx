@@ -17,9 +17,9 @@ import { ArrowLeft } from "lucide-react";
 
 export default function PageClient({ chat }: { chat: Chat }) {
   const context = use(Context);
-  const [streamPromise, setStreamPromise] = useState<
-    Promise<ReadableStream> | undefined
-  >(context.streamPromise);
+  const [streamPromise, setStreamPromise] = useState<Promise<Response> | null>(
+    context.streamPromise
+  );
   const [streamText, setStreamText] = useState("");
   const [isShowingCodeViewer, setIsShowingCodeViewer] = useState(
     chat.messages.some((m) => m.role === "assistant"),
@@ -37,13 +37,20 @@ export default function PageClient({ chat }: { chat: Chat }) {
       if (!streamPromise || isHandlingStreamRef.current) return;
 
       isHandlingStreamRef.current = true;
-      context.setStreamPromise(undefined);
+      context.setStreamPromise(null);
 
-      const stream = await streamPromise;
+      const streamResponse = await streamPromise;
+      if (!streamResponse.body) {
+        console.error("No body on stream response");
+        isHandlingStreamRef.current = false;
+        setStreamPromise(null);
+        return;
+      }
+      
       let didPushToCode = false;
       let didPushToPreview = false;
 
-      ChatCompletionStream.fromReadableStream(stream)
+      ChatCompletionStream.fromReadableStream(streamResponse.body)
         .on("content", (delta, content) => {
           setStreamText((text) => text + delta);
 
@@ -80,7 +87,7 @@ export default function PageClient({ chat }: { chat: Chat }) {
             startTransition(() => {
               isHandlingStreamRef.current = false;
               setStreamText("");
-              setStreamPromise(undefined);
+              setStreamPromise(null);
               setActiveMessage(message);
               router.refresh();
             });
@@ -100,7 +107,7 @@ export default function PageClient({ chat }: { chat: Chat }) {
 
       if (firstUserMessage) {
         console.log("Initial load detected, triggering first AI response for message:", firstUserMessage.id);
-        const initialStreamPromise = fetch(
+        const initialStreamPromise: Promise<Response | null> = fetch(
           "/api/get-next-completion-stream-promise",
           {
             method: "POST",
@@ -109,20 +116,15 @@ export default function PageClient({ chat }: { chat: Chat }) {
               model: chat.model,
             }),
           },
-        ).then((res) => {
-          if (!res.body) {
-            throw new Error("No body on response for initial fetch");
-          }
-          return res.body;
-        }).catch(error => {
+        ).catch(error => {
           console.error("Error fetching initial stream promise:", error);
           return null;
         });
 
-        if (initialStreamPromise) {
-            setStreamPromise(initialStreamPromise as Promise<ReadableStream>);
-            router.replace(`/chats/${chat.id}`);
-        }
+        startTransition(() => {
+          setStreamPromise(initialStreamPromise as Promise<Response> | null);
+          router.replace(`/chats/${chat.id}`);
+        })
       } else {
         console.warn("Initial load detected, but first user message (position 1) not found.");
       }
@@ -184,7 +186,7 @@ export default function PageClient({ chat }: { chat: Chat }) {
 
           <ChatBox
             chat={chat}
-            onNewStreamPromise={setStreamPromise}
+            onNewStreamPromise={(promise) => startTransition(() => setStreamPromise(promise))}
             isStreaming={!!streamPromise}
           />
         </div>
@@ -210,7 +212,7 @@ export default function PageClient({ chat }: { chat: Chat }) {
               }}
               onRequestFix={(error: string) => {
                 startTransition(async () => {
-                  let newMessageText = `The code is not working. Can you fix it? Here's the error:\n\n`;
+                  let newMessageText = `The code is not working. Can you fix it? Here&apos;s the error:\n\n`;
                   newMessageText += error.trimStart();
                   const message = await createMessage(
                     chat.id,
@@ -218,7 +220,7 @@ export default function PageClient({ chat }: { chat: Chat }) {
                     "user",
                   );
 
-                  const streamPromise = fetch(
+                  const streamPromiseResult: Promise<Response | null> = fetch(
                     "/api/get-next-completion-stream-promise",
                     {
                       method: "POST",
@@ -227,15 +229,13 @@ export default function PageClient({ chat }: { chat: Chat }) {
                         model: chat.model,
                       }),
                     },
-                  ).then((res) => {
-                    if (!res.body) {
-                      throw new Error("No body on response");
-                    }
-                    return res.body;
+                  ).catch(error => {
+                    console.error("Error fetching completion stream promise:", error);
+                    return null;
                   });
 
                   startTransition(() => {
-                    setStreamPromise(streamPromise);
+                    setStreamPromise(streamPromiseResult as Promise<Response> | null);
                     router.refresh();
                   });
                 });

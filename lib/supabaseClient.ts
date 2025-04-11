@@ -15,27 +15,31 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // Use this client ONLY in server-side code (.ts files NOT starting with "use client")
 // where you explicitly need to bypass RLS (e.g., administrative tasks).
 // It's often better to rely on RLS policies and the standard client.
-let supabaseAdminSingleton: ReturnType<typeof createClient> | null = null;
+// The admin client is typically used for operations requiring elevated privileges, often related to authentication bypass or user management on the backend.
+// Since we are removing Supabase auth, this specialized client setup is likely unnecessary.
+// If backend operations still need direct database access with elevated rights, consider a different approach or ensure the service_role key usage is strictly for non-auth purposes.
 
-export function getSupabaseAdmin() {
-  if (supabaseAdminSingleton) {
-    return supabaseAdminSingleton;
-  }
+// let supabaseAdminSingleton: ReturnType<typeof createClient> | null = null;
 
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) {
-    console.warn("SUPABASE_SERVICE_ROLE_KEY is not set. Admin client creation skipped.");
-    // Return the standard client or null/throw error depending on requirements
-    return null; // Or return supabase; if anon key is acceptable fallback
-  }
+// export const getSupabaseAdmin = () => {
+//   if (supabaseAdminSingleton) {
+//     return supabaseAdminSingleton;
+//   }
 
-  console.log("Creating Supabase Admin client..."); // Add log for debugging
-  supabaseAdminSingleton = createClient(supabaseUrl!, serviceRoleKey!, {
-     auth: {
-       // Important for server-side operations
-       autoRefreshToken: false,
-       persistSession: false
-     }
-  });
-  return supabaseAdminSingleton;
-} 
+//   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+//   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+//   if (!supabaseUrl || !serviceRoleKey) {
+//     throw new Error('Supabase URL or Service Role Key is missing in environment variables.');
+//   }
+
+//   supabaseAdminSingleton = createClient(supabaseUrl!, serviceRoleKey!, {
+//     auth: {
+//       persistSession: false,
+//       autoRefreshToken: false,
+//       detectSessionInUrl: false,
+//     }
+//   });
+
+//   return supabaseAdminSingleton;
+// }; 
