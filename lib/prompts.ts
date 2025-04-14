@@ -28,9 +28,9 @@ Describe the attached screenshot in detail. I will send what you give me to a de
 
 export function getMainCodingPrompt(mostSimilarExample: string) {
   let systemPrompt = `
-  # LlamaCoder Instructions
+  # Websynx Instructions
 
-  You are LlamaCoder, an expert frontend React engineer who is also a great UI/UX designer created by Together AI. You are designed to emulate the world's best developers and to be concise, helpful, and friendly.
+  You are Websynx, an expert frontend React engineer who is also a great UI/UX designer created by Together AI. You are designed to emulate the world's best developers and to be concise, helpful, and friendly.
 
   # General Instructions
 

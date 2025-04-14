@@ -3,6 +3,7 @@
 import { supabase /*, getSupabaseAdmin */ } from "@/lib/supabaseClient"; // Standard client for RLS
 import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // Import helper for server actions
 import { cookies } from 'next/headers'; // Import cookies helper
+import { revalidatePath } from 'next/cache'; // Import revalidatePath
 import {
   getMainCodingPrompt,
   screenshotToCodePrompt,
@@ -69,9 +70,9 @@ export async function createChat(
     options.baseURL = "https://together.helicone.ai/v1";
     options.defaultHeaders = {
       "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
-      "Helicone-Property-appname": "LlamaCoder",
+      "Helicone-Property-appname": "Websynx",
       "Helicone-Session-Id": chatId, // Use the new chatId
-      "Helicone-Session-Name": "LlamaCoder Chat",
+      "Helicone-Session-Name": "Websynx Chat",
     };
   }
 
@@ -204,6 +205,9 @@ export async function createChat(
       .eq('id', chatId),
     'update chat title'
   );
+
+  // Invalidate the cache for the chat page
+  revalidatePath(`/chats/${chatId}`);
 
   // Find the last message using the SERVER ACTION client
   const lastMessageData = await handleSupabaseError(

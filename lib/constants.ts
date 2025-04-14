@@ -2,17 +2,16 @@ export const MODELS = [
  
  
   {
-    label: "Claude lite",
-    value: "Qwen/QwQ-32B",
+    label: "Llama 4 Maverick",
+    value: "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
   },
   {
     label: "DeepSeek V3",
     value: "deepseek-ai/DeepSeek-V3",
   },
-
   {
-    label: "Llama 4 Maverick",
-    value: "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
+    label: "Claude lite",
+    value: "Qwen/QwQ-32B",
   },
   {
     label: "Llama 3.3 70B",
