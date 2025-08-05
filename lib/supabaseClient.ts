@@ -1,11 +1,11 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!(supabaseUrl && supabaseAnonKey)) {
   // In a real app, you might handle this more gracefully
-  throw new Error('Missing Supabase environment variables')
+  throw new Error('Missing Supabase environment variables');
 }
 
 // Client for use in client-side components and server components/actions (using anon key)
@@ -13,8 +13,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-  }
-})
+  },
+});
 
 // Server-side Admin Client for administrative operations only
 // This should only be used in server components or API routes with the service role key
@@ -28,8 +28,10 @@ export const getSupabaseAdmin = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Supabase URL or Service Role Key is missing in environment variables.');
+  if (!(supabaseUrl && serviceRoleKey)) {
+    throw new Error(
+      'Supabase URL or Service Role Key is missing in environment variables.'
+    );
   }
 
   supabaseAdminSingleton = createClient(supabaseUrl, serviceRoleKey, {
@@ -37,8 +39,8 @@ export const getSupabaseAdmin = () => {
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
-    }
+    },
   });
 
   return supabaseAdminSingleton;
-}; 
+};

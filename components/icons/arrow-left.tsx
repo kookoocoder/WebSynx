@@ -1,12 +1,12 @@
-import { ComponentProps } from "react";
+import type { ComponentProps } from 'react';
 
-export default function ArrowLeftIcon(props: ComponentProps<"svg">) {
+export default function ArrowLeftIcon(props: ComponentProps<'svg'>) {
   return (
     <svg
-      width={12}
+      fill="none"
       height={12}
       viewBox="0 0 12 12"
-      fill="none"
+      width={12}
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >

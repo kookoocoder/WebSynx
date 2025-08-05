@@ -1,14 +1,15 @@
-"use client";
+'use client';
 
-import React, { useState } from 'react';
+import { Chrome, Github } from 'lucide-react'; // Keep icons if used for other buttons
+import Image from 'next/image';
 // import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'; // Removed
 import { useRouter } from 'next/navigation';
+import type React from 'react';
+import { useState } from 'react';
 // import { Button } from "@/components/ui/button"; // Commented out due to path issue
 // import { Input } from "@/components/ui/input"; // Commented out due to path issue
 // import { Label } from "@/components/ui/label"; // Commented out due to path issue
-import { toast } from "@/hooks/use-toast";
-import { Github, Chrome } from 'lucide-react'; // Keep icons if used for other buttons
-import Image from 'next/image';
+import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function LoginPage() {
@@ -35,19 +36,21 @@ export default function LoginPage() {
       }
 
       // If successful
-      toast({ 
-        title: "Login Successful",
-        description: "Welcome back!"
+      toast({
+        title: 'Login Successful',
+        description: 'Welcome back!',
       });
-      
-      router.push('/'); 
+
+      router.push('/');
     } catch (error: any) {
-      console.error("Login failed:", error);
+      console.error('Login failed:', error);
       // Display the error message from Supabase or a generic one
       toast({
-        title: "Login Failed",
-        description: error.message || "Invalid credentials or an unexpected error occurred.",
-        variant: "destructive",
+        title: 'Login Failed',
+        description:
+          error.message ||
+          'Invalid credentials or an unexpected error occurred.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -105,16 +108,18 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 p-4">
       <div className="w-full max-w-md rounded-xl border border-purple-700/30 bg-gray-800/50 p-8 shadow-2xl shadow-purple-500/10 backdrop-blur-lg">
         <div className="mb-6 flex justify-center">
-          <Image 
-            src="/websynx-logo.png" 
-            alt="WebSynx Logo" 
-            width={64} 
-            height={64} 
-            className="rounded-full h-auto"
+          <Image
+            alt="WebSynx Logo"
+            className="h-auto rounded-full"
+            height={64}
             priority
-          /> 
+            src="/websynx-logo.png"
+            width={64}
+          />
         </div>
-        <h2 className="mb-6 text-center text-2xl font-bold text-white">Login to WebSynx</h2>
+        <h2 className="mb-6 text-center font-bold text-2xl text-white">
+          Login to WebSynx
+        </h2>
 
         {/* Placeholder for OAuth buttons if you implement them with another provider */}
         {/* <div className="mb-6 grid grid-cols-2 gap-4">
@@ -132,40 +137,58 @@ export default function LoginPage() {
           <div className="flex-grow border-t border-gray-600"></div>
           <span className="mx-4 flex-shrink text-xs uppercase text-gray-400">Or continue with</span>
           <div className="flex-grow border-t border-gray-600"></div>
-        </div> */} 
+        </div> */}
 
-        <form onSubmit={handleEmailLogin} className="space-y-4">
+        <form className="space-y-4" onSubmit={handleEmailLogin}>
           <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-300">Email</label>
+            <label
+              className="mb-1 block font-medium text-gray-300 text-sm"
+              htmlFor="email"
+            >
+              Email
+            </label>
             <input
+              className="w-full rounded-md border-gray-600 bg-gray-700/50 px-3 py-2 text-white focus:border-purple-500 focus:ring-purple-500"
               id="email"
-              type="email"
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setEmail(e.target.value)
+              }
               placeholder="you@example.com"
               required
-              className="w-full rounded-md border-gray-600 bg-gray-700/50 px-3 py-2 text-white focus:border-purple-500 focus:ring-purple-500"
+              type="email"
+              value={email}
             />
           </div>
           <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-300">Password</label>
-             <input
-              id="password"
-              type="password"
+            <label
+              className="mb-1 block font-medium text-gray-300 text-sm"
+              htmlFor="password"
+            >
+              Password
+            </label>
+            <input
               autoComplete="current-password"
-              value={password}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+              className="w-full rounded-md border-gray-600 bg-gray-700/50 px-3 py-2 text-white focus:border-purple-500 focus:ring-purple-500"
+              id="password"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setPassword(e.target.value)
+              }
               placeholder="••••••••"
               required
-              className="w-full rounded-md border-gray-600 bg-gray-700/50 px-3 py-2 text-white focus:border-purple-500 focus:ring-purple-500"
+              type="password"
+              value={password}
             />
           </div>
-          <button type="submit" disabled={loading} className="w-full rounded-md bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2 font-semibold text-white shadow-lg transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button
+            className="w-full rounded-md bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2 font-semibold text-white shadow-lg transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={loading}
+            type="submit"
+          >
             {loading ? (
-               <span className="animate-pulse">Logging in...</span>
-             ) : (
-               'Login'
-             )}
+              <span className="animate-pulse">Logging in...</span>
+            ) : (
+              'Login'
+            )}
           </button>
         </form>
 
@@ -175,7 +198,7 @@ export default function LoginPage() {
           <a href="/signup" className="font-medium text-purple-400 hover:text-purple-300">
             Sign up
           </a>
-        </p> */} 
+        </p> */}
       </div>
     </div>
   );

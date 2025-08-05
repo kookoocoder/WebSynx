@@ -1,10 +1,10 @@
-import { ComponentProps } from "react";
-import { useFormStatus } from "react-dom";
+import type { ComponentProps } from 'react';
+import { useFormStatus } from 'react-dom';
 
 export default function Fieldset({
   children,
   ...rest
-}: ComponentProps<"fieldset">) {
+}: ComponentProps<'fieldset'>) {
   const { pending } = useFormStatus();
 
   return (

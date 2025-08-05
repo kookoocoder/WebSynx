@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "postinstall": "",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint && tsc --noEmit --noUnusedLocals"
+    "lint": "ultracite lint",
+    "format": "ultracite format"
   },
   "dependencies": {
     "@codesandbox/sandpack-react": "^2.19.10",

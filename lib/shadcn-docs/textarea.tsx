@@ -1,4 +1,4 @@
-export const name = "Textarea";
+export const name = 'Textarea';
 
 export const importDocs = `
 import { Textarea } from "@/components/ui/textarea"

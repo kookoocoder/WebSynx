@@ -1,12 +1,12 @@
-import { ComponentProps } from "react";
+import type { ComponentProps } from 'react';
 
-export default function ShareIcon(props: ComponentProps<"svg">) {
+export default function ShareIcon(props: ComponentProps<'svg'>) {
   return (
     <svg
-      width={10}
+      fill="none"
       height={11}
       viewBox="0 0 10 11"
-      fill="none"
+      width={10}
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >

@@ -1,4 +1,4 @@
-export const name = "Card";
+export const name = 'Card';
 
 export const importDocs = `
 import {

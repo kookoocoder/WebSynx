@@ -1,11 +1,11 @@
-import { ComponentProps } from "react";
+import type { ComponentProps } from 'react';
 
-export default function UploadIcon(props: ComponentProps<"svg">) {
+export default function UploadIcon(props: ComponentProps<'svg'>) {
   return (
     <svg
       height={10}
-      width={10}
       viewBox="0 0 8.4666664 8.4666664"
+      width={10}
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >

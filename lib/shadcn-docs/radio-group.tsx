@@ -1,4 +1,4 @@
-export const name = "RadioGroup";
+export const name = 'RadioGroup';
 
 export const importDocs = `
 import { Label } from "/components/ui/label"

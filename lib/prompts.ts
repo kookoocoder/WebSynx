@@ -1,7 +1,7 @@
-import dedent from "dedent";
-import shadcnDocs from "./shadcn-docs";
-import assert from "assert";
-import { examples } from "./shadcn-examples";
+import assert from 'assert';
+import dedent from 'dedent';
+import shadcnDocs from './shadcn-docs';
+import { examples } from './shadcn-examples';
 
 export const softwareArchitectPrompt = dedent`
 You are an expert software architect and product lead responsible for taking an idea of an app, analyzing it, and producing an implementation plan for a single page React frontend app. You are describing a plan for a single component React + Tailwind CSS + TypeScript app with the ability to use Lucide React for icons and Shadcn UI for components.
@@ -71,13 +71,13 @@ export function getMainCodingPrompt(mostSimilarExample: string) {
         ${component.usageDocs}
         </usage-instructions>
         </component>
-      `,
+      `
     )
-    .join("\n")}
+    .join('\n')}
 
   Remember, if you use a shadcn UI component from the above available components, make sure to import it FROM THE CORRECT PATH. Double check that imports are correct, each is imported in it's own path, and all components that are used in the code are imported. Here's a list of imports again for your reference:
 
-  ${shadcnDocs.map((component) => component.importDocs).join("\n")}
+  ${shadcnDocs.map((component) => component.importDocs).join('\n')}
 
   Here's an example of an INCORRECT import:
   import { Button, Input, Label } from "/components/ui/button"
@@ -98,18 +98,18 @@ export function getMainCodingPrompt(mostSimilarExample: string) {
   Here's a good example:
 
   Prompt:
-  ${examples["calculator app"].prompt}
+  ${examples['calculator app'].prompt}
 
   Response:
-  ${examples["calculator app"].response}
+  ${examples['calculator app'].response}
   `;
 
-  if (mostSimilarExample !== "none") {
+  if (mostSimilarExample !== 'none') {
     assert.ok(
-      mostSimilarExample === "landing page" ||
-        mostSimilarExample === "blog app" ||
-        mostSimilarExample === "quiz app" ||
-        mostSimilarExample === "pomodoro timer",
+      mostSimilarExample === 'landing page' ||
+        mostSimilarExample === 'blog app' ||
+        mostSimilarExample === 'quiz app' ||
+        mostSimilarExample === 'pomodoro timer'
     );
     systemPrompt += `
     Here another example (thats missing explanations and is just code):

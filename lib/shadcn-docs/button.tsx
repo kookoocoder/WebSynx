@@ -1,4 +1,4 @@
-export const name = "Button";
+export const name = 'Button';
 
 export const importDocs = `
 import { Button } from "/components/ui/button"

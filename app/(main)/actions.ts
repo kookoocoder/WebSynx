@@ -1,50 +1,50 @@
-"use server";
+'use server';
 
-import { supabase /*, getSupabaseAdmin */ } from "@/lib/supabaseClient"; // Standard client for RLS
 import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // Import helper for server actions
-import { cookies } from 'next/headers'; // Import cookies helper
 import { revalidatePath } from 'next/cache'; // Import revalidatePath
+import { cookies } from 'next/headers'; // Import cookies helper
+import { notFound } from 'next/navigation';
+import Together from 'together-ai';
 import {
   getMainCodingPrompt,
   screenshotToCodePrompt,
   softwareArchitectPrompt,
-} from "@/lib/prompts";
-import { notFound } from "next/navigation";
-import Together from "together-ai";
+} from '@/lib/prompts';
+import { supabase /*, getSupabaseAdmin */ } from '@/lib/supabaseClient'; // Standard client for RLS
 
 // Helper function for error handling (optional but recommended)
 async function handleSupabaseError(query: any, context: string) {
-    const { data, error } = await query;
-    if (error) {
-        console.error(`Supabase Error [${context}]:`, error);
-        throw new Error(`Supabase operation failed: ${context} - ${error.message}`);
-    }
-    return data;
+  const { data, error } = await query;
+  if (error) {
+    console.error(`Supabase Error [${context}]:`, error);
+    throw new Error(`Supabase operation failed: ${context} - ${error.message}`);
+  }
+  return data;
 }
 
 export async function createChat(
   prompt: string,
   model: string,
-  quality: "high" | "low",
-  screenshotUrl: string | undefined,
+  quality: 'high' | 'low',
+  screenshotUrl: string | undefined
 ) {
   // Create a Supabase client for Server Actions to get user session if available
   const supabaseServerClient = createServerActionClient({ cookies });
-  
+
   // Try to get the user, but don't require it
   const { data } = await supabaseServerClient.auth.getUser();
   const user = data?.user; // May be null if not logged in
-  
+
   // Prepare chat object with or without user_id
   const chatObject: any = {
     model,
     quality,
     prompt,
-    title: "", 
-    shadcn: true, 
-    "websynxVersion": "v2"
+    title: '',
+    shadcn: true,
+    websynxVersion: 'v2',
   };
-  
+
   // Only add user_id if a user is logged in
   if (user) {
     chatObject.user_id = user.id;
@@ -52,27 +52,23 @@ export async function createChat(
 
   // Create chat record using the SERVER ACTION client
   const chatData = await handleSupabaseError(
-    supabaseServerClient
-      .from('chats')
-      .insert(chatObject)
-      .select('id') 
-      .single(), 
+    supabaseServerClient.from('chats').insert(chatObject).select('id').single(),
     'insert chat'
   );
 
   if (!chatData?.id) {
-     throw new Error("Failed to create chat or retrieve ID.");
+    throw new Error('Failed to create chat or retrieve ID.');
   }
   const chatId = chatData.id;
 
-  let options: ConstructorParameters<typeof Together>[0] = {};
+  const options: ConstructorParameters<typeof Together>[0] = {};
   if (process.env.HELICONE_API_KEY) {
-    options.baseURL = "https://together.helicone.ai/v1";
+    options.baseURL = 'https://together.helicone.ai/v1';
     options.defaultHeaders = {
-      "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
-      "Helicone-Property-appname": "Websynx",
-      "Helicone-Session-Id": chatId, // Use the new chatId
-      "Helicone-Session-Name": "Websynx Chat",
+      'Helicone-Auth': `Bearer ${process.env.HELICONE_API_KEY}`,
+      'Helicone-Property-appname': 'Websynx',
+      'Helicone-Session-Id': chatId, // Use the new chatId
+      'Helicone-Session-Name': 'Websynx Chat',
     };
   }
 
@@ -80,15 +76,15 @@ export async function createChat(
 
   async function fetchTitle() {
     const responseForChatTitle = await together.chat.completions.create({
-      model: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
       messages: [
         {
-          role: "system",
+          role: 'system',
           content:
-            "You are a chatbot helping the user create a simple app or script, and your current job is to create a succinct title, maximum 3-5 words, for the chat given their initial prompt. Please return only the title.",
+            'You are a chatbot helping the user create a simple app or script, and your current job is to create a succinct title, maximum 3-5 words, for the chat given their initial prompt. Please return only the title.',
         },
         {
-          role: "user",
+          role: 'user',
           content: prompt,
         },
       ],
@@ -99,10 +95,10 @@ export async function createChat(
 
   async function fetchTopExample() {
     const findSimilarExamples = await together.chat.completions.create({
-      model: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
       messages: [
         {
-          role: "system",
+          role: 'system',
           content: `You are a helpful bot. Given a request for building an app, you match it to the most similar example provided. If the request is NOT similar to any of the provided examples, return "none". Here is the list of examples, ONLY reply with one of them OR "none":
 
           - landing page
@@ -112,14 +108,14 @@ export async function createChat(
           `,
         },
         {
-          role: "user",
+          role: 'user',
           content: prompt,
         },
       ],
     });
 
     const mostSimilarExample =
-      findSimilarExamples.choices[0].message?.content || "none";
+      findSimilarExamples.choices[0].message?.content || 'none';
     return mostSimilarExample;
   }
 
@@ -131,16 +127,16 @@ export async function createChat(
   let fullScreenshotDescription;
   if (screenshotUrl) {
     const screenshotResponse = await together.chat.completions.create({
-      model: "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo",
+      model: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
       temperature: 0.2,
       max_tokens: 1000,
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: [
-            { type: "text", text: screenshotToCodePrompt },
+            { type: 'text', text: screenshotToCodePrompt },
             {
-              type: "image_url",
+              type: 'image_url',
               image_url: {
                 url: screenshotUrl,
               },
@@ -154,16 +150,16 @@ export async function createChat(
   }
 
   let userMessage: string;
-  if (quality === "high") {
-    let initialRes = await together.chat.completions.create({
-      model: "Qwen/Qwen2.5-Coder-32B-Instruct",
+  if (quality === 'high') {
+    const initialRes = await together.chat.completions.create({
+      model: 'Qwen/Qwen2.5-Coder-32B-Instruct',
       messages: [
         {
-          role: "system",
+          role: 'system',
           content: softwareArchitectPrompt,
         },
         {
-          role: "user",
+          role: 'user',
           content: fullScreenshotDescription
             ? fullScreenshotDescription + prompt
             : prompt,
@@ -177,7 +173,7 @@ export async function createChat(
   } else if (fullScreenshotDescription) {
     userMessage =
       prompt +
-      "RECREATE THIS APP AS CLOSELY AS POSSIBLE: " +
+      'RECREATE THIS APP AS CLOSELY AS POSSIBLE: ' +
       fullScreenshotDescription;
   } else {
     userMessage = prompt;
@@ -191,8 +187,13 @@ export async function createChat(
     supabaseServerClient // Use server client here too
       .from('messages')
       .insert([
-        { role: "system", content: systemMessageContent, position: 0, chat_id: chatId },
-        { role: "user", content: userMessage, position: 1, chat_id: chatId }
+        {
+          role: 'system',
+          content: systemMessageContent,
+          position: 0,
+          chat_id: chatId,
+        },
+        { role: 'user', content: userMessage, position: 1, chat_id: chatId },
       ]),
     'insert initial messages'
   );
@@ -201,7 +202,7 @@ export async function createChat(
   await handleSupabaseError(
     supabaseServerClient // Use server client here too
       .from('chats')
-      .update({ title: title })
+      .update({ title })
       .eq('id', chatId),
     'update chat title'
   );
@@ -220,10 +221,11 @@ export async function createChat(
     'find last message'
   );
 
-  if (!lastMessageData?.id) throw new Error("Could not find the created user message");
+  if (!lastMessageData?.id)
+    throw new Error('Could not find the created user message');
 
   return {
-    chatId: chatId,
+    chatId,
     lastMessageId: lastMessageData.id,
   };
 }
@@ -231,14 +233,14 @@ export async function createChat(
 export async function createMessage(
   chatId: string,
   text: string,
-  role: "assistant" | "user",
+  role: 'assistant' | 'user'
 ) {
   const supabaseServerClient = createServerActionClient({ cookies }); // Create server client
-  
+
   // Try to get the user, but don't require it
   const { data } = await supabaseServerClient.auth.getUser();
   const user = data?.user; // May be null if not logged in
-  
+
   // Skip user ownership checks if no user is logged in
   if (user) {
     // Optionally check if the chat belongs to this user before adding a message
@@ -248,7 +250,7 @@ export async function createMessage(
         .select('user_id')
         .eq('id', chatId)
         .single();
-      
+
       // If chat has an owner (user_id) and it's not the current user, don't allow them to add messages
       if (chatOwner?.user_id && chatOwner.user_id !== user.id) {
         console.warn("User trying to add message to someone else's chat");
@@ -267,14 +269,16 @@ export async function createMessage(
     .eq('chat_id', chatId)
     .order('position', { ascending: false })
     .limit(1)
-    .maybeSingle(); 
+    .maybeSingle();
 
   if (maxPosError) {
-    console.error(`Supabase Error [find max position]:`, maxPosError);
-    throw new Error(`Supabase operation failed: find max position - ${maxPosError.message}`);
+    console.error('Supabase Error [find max position]:', maxPosError);
+    throw new Error(
+      `Supabase operation failed: find max position - ${maxPosError.message}`
+    );
   }
 
-  const maxPosition = maxPosData?.position ?? -1; 
+  const maxPosition = maxPosData?.position ?? -1;
 
   // Insert the new message
   const newMessageData = await handleSupabaseError(
@@ -284,12 +288,12 @@ export async function createMessage(
         role,
         content: text,
         position: maxPosition + 1,
-        chat_id: chatId, 
+        chat_id: chatId,
       })
-      .select() 
-      .single(), 
+      .select()
+      .single(),
     'insert message'
   );
 
-  return newMessageData; 
+  return newMessageData;
 }

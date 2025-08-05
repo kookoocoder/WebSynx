@@ -1,8 +1,8 @@
-import Spinner from "@/components/spinner";
-import { ComponentProps } from "react";
-import { useFormStatus } from "react-dom";
+import type { ComponentProps } from 'react';
+import { useFormStatus } from 'react-dom';
+import Spinner from '@/components/spinner';
 
-interface LoadingButtonProps extends ComponentProps<"button"> {
+interface LoadingButtonProps extends ComponentProps<'button'> {
   isLoading?: boolean;
   spinnerClassName?: string;
 }
@@ -18,7 +18,9 @@ export default function LoadingButton({
 
   return (
     <button {...rest} disabled={isButtonLoading}>
-      <Spinner loading={isButtonLoading} className={spinnerClassName}>{children}</Spinner>
+      <Spinner className={spinnerClassName} loading={isButtonLoading}>
+        {children}
+      </Spinner>
     </button>
   );
 }

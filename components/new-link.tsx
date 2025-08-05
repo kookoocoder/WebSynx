@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import { ComponentProps } from "react";
+import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
+import type { ComponentProps } from 'react';
 
 type NewLinkProps = {
   newQuery?: Record<string, string | number | null>;
@@ -14,7 +14,7 @@ export default function NewLink({
   newQuery,
   children,
   ...props
-}: Omit<ComponentProps<typeof Link>, "href"> & NewLinkProps) {
+}: Omit<ComponentProps<typeof Link>, 'href'> & NewLinkProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
@@ -33,7 +33,7 @@ export default function NewLink({
     });
 
     const queryString = params.toString();
-    finalHref = `${finalHref}${queryString ? `?${queryString}` : ""}`;
+    finalHref = `${finalHref}${queryString ? `?${queryString}` : ''}`;
   }
 
   return (

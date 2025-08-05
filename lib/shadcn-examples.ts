@@ -1,8 +1,8 @@
-import dedent from "dedent";
+import dedent from 'dedent';
 
 export const examples = {
-  "landing page": {
-    prompt: "Build a landing page for a healthcare company",
+  'landing page': {
+    prompt: 'Build a landing page for a healthcare company',
     response: `
     import React from 'react';
 import { Button } from "/components/ui/button"
@@ -142,8 +142,8 @@ export default function HealthcareLandingPage() {
 }
     `,
   },
-  "blog app": {
-    prompt: "make me a personal blog",
+  'blog app': {
+    prompt: 'make me a personal blog',
     response: `
     import { useState } from 'react'
 import Link from 'next/link'
@@ -319,8 +319,8 @@ export default function Blog() {
 }
     `,
   },
-  "calculator app": {
-    prompt: "make me a calculator app",
+  'calculator app': {
+    prompt: 'make me a calculator app',
     response: dedent(`
     I'll create a calculator app using React. This calculator will support basic arithmetic operations: addition, subtraction, multiplication, and division. Let's break it down into components and implement the functionality.
 
@@ -439,9 +439,9 @@ export default function Blog() {
     The component uses React's useState hook to manage the state of the display, operands, and current operation. The logic handles both immediate execution of operations and chaining of multiple operations."
     `),
   },
-  "quiz app": {
+  'quiz app': {
     prompt:
-      "Make me a quiz app about American history. Make sure to give the user an explanation on each question whether they got it right or wrong and keep a score going",
+      'Make me a quiz app about American history. Make sure to give the user an explanation on each question whether they got it right or wrong and keep a score going',
     response: dedent(`
       I'll create an interactive quiz app about American history with feedback and scoring functionality.
 
@@ -611,8 +611,8 @@ The app uses:
 The questions cover various important aspects of American history, from the founding of the nation to constitutional amendments, making it both educational and engaging.
       `),
   },
-  "pomodoro timer": {
-    prompt: "make a pomodoro timer",
+  'pomodoro timer': {
+    prompt: 'make a pomodoro timer',
     response: dedent(`
       I'll create a Pomodoro timer with adjustable focus and break times, along with a sound notification when the timer completes. Since no reference image/app was provided in your prompt, I'll create a clean and functional design.
 

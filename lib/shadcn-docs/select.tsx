@@ -1,4 +1,4 @@
-export const name = "Select";
+export const name = 'Select';
 
 export const importDocs = `
 import {

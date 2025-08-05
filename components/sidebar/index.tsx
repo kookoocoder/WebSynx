@@ -1,13 +1,20 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef, useMemo } from "react";
-import { Search, ChevronLeft, ChevronRight, PlusCircle, MessageSquare, User } from "lucide-react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { AnimatePresence, motion as FramerMotion } from "framer-motion";
-import ChatHistoryItem from "./chat-history-item";
-import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { AnimatePresence, motion as FramerMotion } from 'framer-motion';
+import {
+  ChevronLeft,
+  ChevronRight,
+  MessageSquare,
+  PlusCircle,
+  Search,
+  User,
+} from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
+import ChatHistoryItem from './chat-history-item';
 
 interface SidebarProps {
   initiallyExpanded?: boolean;
@@ -15,7 +22,7 @@ interface SidebarProps {
 
 export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
   const [isExpanded, setIsExpanded] = useState(initiallyExpanded);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
@@ -51,7 +58,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
     // fetchUser();
 
     // Placeholder: Fetch chat history from your data source
-    console.log("Sidebar: Fetching chat history (placeholder)");
+    console.log('Sidebar: Fetching chat history (placeholder)');
     // Example:
     // const fetchChats = async () => {
     //   const chats = await getMyChatHistory();
@@ -62,9 +69,12 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
     // Placeholder chat data for demonstration
     setChatHistory([
       { id: '1', title: 'Placeholder Chat 1', timestamp: new Date() },
-      { id: '2', title: 'Another Placeholder', timestamp: new Date(Date.now() - 86400000) }, // Yesterday
+      {
+        id: '2',
+        title: 'Another Placeholder',
+        timestamp: new Date(Date.now() - 86_400_000),
+      }, // Yesterday
     ]);
-
   }, []); // Removed supabase dependency
 
   // Removed loading state check
@@ -72,10 +82,11 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
   //   return <div className="w-64 h-full bg-gray-900 p-4">Loading...</div>; // Or a skeleton loader
   // }
 
-  const filteredHistory = useMemo(() =>
-    chatHistory.filter(chat =>
-      chat.title.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
+  const filteredHistory = useMemo(
+    () =>
+      chatHistory.filter((chat) =>
+        chat.title.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
     [chatHistory, searchQuery]
   );
 
@@ -83,14 +94,14 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
   useEffect(() => {
     const isInChatPage = pathname.includes('/chats/');
     const isMediumScreen = window.innerWidth < 1024; // lg breakpoint
-    
+
     if (isInChatPage && isMediumScreen) {
       setIsExpanded(false);
     } else {
       // Respect initial prop or keep current state if manually changed
       // setIsExpanded(initiallyExpanded); // Reverting this to let manual expansion stick
     }
-    
+
     const handleResize = () => {
       if (isInChatPage && window.innerWidth < 1024) {
         setIsExpanded(false);
@@ -114,21 +125,23 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
 
   // Handle new chat creation
   const handleNewChat = () => {
-    console.log("Sidebar: New Chat button clicked -> Navigating to / and collapsing");
+    console.log(
+      'Sidebar: New Chat button clicked -> Navigating to / and collapsing'
+    );
     // Collapse the sidebar
     setIsExpanded(false);
     // Navigate to the main page to start a new chat
     router.push('/');
-    
+
     // Add a slight delay to ensure the navigation completes and the component mounts
     setTimeout(() => {
       // Try to find and focus the textarea directly
       const promptTextarea = document.querySelector('textarea[name="prompt"]');
       if (promptTextarea instanceof HTMLTextAreaElement) {
         promptTextarea.focus();
-        console.log("Focused prompt textarea after navigation");
+        console.log('Focused prompt textarea after navigation');
       } else {
-        console.log("Could not find prompt textarea to focus");
+        console.log('Could not find prompt textarea to focus');
       }
     }, 100);
   };
@@ -146,10 +159,10 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault();
-        if (!isExpanded) {
-          setIsExpanded(true); // Expand if collapsed
+        if (isExpanded) {
+          searchInputRef.current?.focus(); // Focus if already expanded
         } else {
-           searchInputRef.current?.focus(); // Focus if already expanded
+          setIsExpanded(true); // Expand if collapsed
         }
       }
     };
@@ -163,16 +176,20 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
     const handleClickOutside = (event: MouseEvent) => {
       // Find the sidebar element
       const sidebarElement = document.querySelector('aside');
-      
+
       // If sidebar is expanded and click is outside sidebar
-      if (isExpanded && sidebarElement && !sidebarElement.contains(event.target as Node)) {
+      if (
+        isExpanded &&
+        sidebarElement &&
+        !sidebarElement.contains(event.target as Node)
+      ) {
         setIsExpanded(false);
       }
     };
 
     // Add event listener
     document.addEventListener('mousedown', handleClickOutside);
-    
+
     // Clean up
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -181,7 +198,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
 
   return (
     <>
-      {/* Overlay for mobile/tablet view when sidebar is open */} 
+      {/* Overlay for mobile/tablet view when sidebar is open */}
       {!initiallyExpanded && isExpanded && (
         <div
           className="fixed inset-0 z-30 bg-black/50 lg:hidden"
@@ -189,132 +206,140 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
         />
       )}
 
-      {/* Sidebar */} 
+      {/* Sidebar */}
       <FramerMotion.aside
-        initial={false}
-        animate={{ width: isExpanded ? 256 : 72 }} // Animate width
-        transition={{ duration: 0.2, ease: "easeInOut" }}
+        animate={{ width: isExpanded ? 256 : 72 }}
         className={cn(
-          "fixed left-0 top-0 z-40 flex h-full flex-col bg-gray-800/50 backdrop-blur-sm text-white transition-transform duration-300 ease-in-out lg:translate-x-0",
-          isExpanded ? "translate-x-0" : "-translate-x-full", // Handle mobile slide-in/out
-          "border-r border-purple-700/20"
-        )}
+          'fixed top-0 left-0 z-40 flex h-full flex-col bg-gray-800/50 text-white backdrop-blur-sm transition-transform duration-300 ease-in-out lg:translate-x-0',
+          isExpanded ? 'translate-x-0' : '-translate-x-full', // Handle mobile slide-in/out
+          'border-purple-700/20 border-r'
+        )} // Animate width
+        initial={false}
+        transition={{ duration: 0.2, ease: 'easeInOut' }}
       >
         <div className="flex h-full flex-col">
-          {/* Header */} 
-          <div className="flex items-center justify-between p-3 border-b border-purple-700/20 h-16">
+          {/* Header */}
+          <div className="flex h-16 items-center justify-between border-purple-700/20 border-b p-3">
             {isExpanded && (
-              <Link href="/" className="flex items-center gap-2">
+              <Link className="flex items-center gap-2" href="/">
                 {/* Logo */}
-                <Image 
-                  src="/websynx-logo.png" 
+                <Image
                   alt="WebSynx Logo"
-                  width={24}
+                  className="h-6 w-6"
                   height={24}
-                  className="h-6 w-6" 
+                  src="/websynx-logo.png"
+                  width={24}
                 />
-                <span className="text-lg font-semibold">WebSynx</span>
+                <span className="font-semibold text-lg">WebSynx</span>
               </Link>
             )}
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
               className="rounded p-1.5 text-gray-400 hover:bg-purple-700/10 hover:text-white"
-              aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
+              onClick={() => setIsExpanded(!isExpanded)}
             >
-              {isExpanded ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+              {isExpanded ? (
+                <ChevronLeft size={20} />
+              ) : (
+                <ChevronRight size={20} />
+              )}
             </button>
           </div>
 
-          {/* New Chat Button */} 
-          <div className="p-2 mt-2">
+          {/* New Chat Button */}
+          <div className="mt-2 p-2">
             <button
-              onClick={handleNewChat}
+              aria-label="Start new chat"
               className={cn(
-                "flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                "bg-purple-600 hover:bg-purple-700 text-white",
-                !isExpanded && "h-10 w-10 p-0"
+                'flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 font-medium text-sm transition-colors',
+                'bg-purple-600 text-white hover:bg-purple-700',
+                !isExpanded && 'h-10 w-10 p-0'
               )}
-               aria-label="Start new chat"
+              onClick={handleNewChat}
             >
               <PlusCircle size={isExpanded ? 20 : 24} />
               {isExpanded && <span>New Chat</span>}
             </button>
           </div>
 
-          {/* Search */} 
+          {/* Search */}
           <div className="p-2">
-             {/* Expanded Search Input */} 
+            {/* Expanded Search Input */}
             {isExpanded && (
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-gray-400" />
                 <input
+                  className="w-full rounded-lg border border-purple-700/20 bg-gray-800/50 py-1.5 pr-3 pl-9 text-sm placeholder-gray-400 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search chats... (⌘K)"
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Search chats... (⌘K)"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg border border-purple-700/20 bg-gray-800/50 py-1.5 pl-9 pr-3 text-sm placeholder-gray-400 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
                 />
               </div>
             )}
-             {/* Collapsed Search Icon Button */} 
+            {/* Collapsed Search Icon Button */}
             {!isExpanded && (
               <button
-                onClick={handleCollapsedSearchClick}
+                aria-label="Search chats"
                 className={cn(
-                  "flex w-full items-center justify-center rounded-lg h-10 w-10 p-0 text-sm font-medium transition-colors",
-                  "text-gray-400 hover:bg-purple-700/10 hover:text-white"
+                  'flex h-10 w-10 w-full items-center justify-center rounded-lg p-0 font-medium text-sm transition-colors',
+                  'text-gray-400 hover:bg-purple-700/10 hover:text-white'
                 )}
-                 aria-label="Search chats"
+                onClick={handleCollapsedSearchClick}
               >
                 <Search size={20} />
               </button>
             )}
           </div>
 
-          {/* Chat history */} 
-          <div className="flex-1 overflow-y-auto scrollbar-hide">
+          {/* Chat history */}
+          <div className="scrollbar-hide flex-1 overflow-y-auto">
             <AnimatePresence initial={false}>
               <FramerMotion.div
-                key={searchQuery} // Re-run animation on search change if desired
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 1, y: 0 }} // Re-run animation on search change if desired
+                className="space-y-1 px-2 py-1"
                 exit={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: 10 }}
+                key={searchQuery}
                 transition={{ duration: 0.15 }}
-                className="px-2 py-1 space-y-1"
               >
                 {/* Render history only when expanded */}
-                {isExpanded && filteredHistory.length > 0 ? (
-                  filteredHistory.map((chat) => (
-                    <ChatHistoryItem
-                      key={chat.id}
-                      chat={chat}
-                      isExpanded={isExpanded} // Pass isExpanded state
-                      isActive={pathname === `/chats/${chat.id}`}
-                    />
-                  ))
-                ) : isExpanded && searchQuery ? (
-                  <div className="px-3 py-2 text-sm text-gray-400 text-center">
-                    No chats found
-                  </div>
-                ) : isExpanded ? (
-                   <div className="px-3 py-2 text-sm text-gray-400 text-center">
-                    No chat history
-                  </div>
-                ) : null /* Don't render anything if collapsed */}
+                {
+                  isExpanded && filteredHistory.length > 0 ? (
+                    filteredHistory.map((chat) => (
+                      <ChatHistoryItem
+                        chat={chat}
+                        isActive={pathname === `/chats/${chat.id}`}
+                        isExpanded={isExpanded} // Pass isExpanded state
+                        key={chat.id}
+                      />
+                    ))
+                  ) : isExpanded && searchQuery ? (
+                    <div className="px-3 py-2 text-center text-gray-400 text-sm">
+                      No chats found
+                    </div>
+                  ) : isExpanded ? (
+                    <div className="px-3 py-2 text-center text-gray-400 text-sm">
+                      No chat history
+                    </div>
+                  ) : null /* Don't render anything if collapsed */
+                }
               </FramerMotion.div>
             </AnimatePresence>
           </div>
 
-          {/* User profile section (Placeholder/Removed) */} 
+          {/* User profile section (Placeholder/Removed) */}
           {isExpanded && (
-            <div className="border-t border-purple-700/20 p-3 mt-auto">
+            <div className="mt-auto border-purple-700/20 border-t p-3">
               {/* Placeholder text or component */}
-              <div className="text-xs text-gray-400 text-center py-2">User section</div>
+              <div className="py-2 text-center text-gray-400 text-xs">
+                User section
+              </div>
             </div>
           )}
         </div>
       </FramerMotion.aside>
     </>
   );
-} 
+}

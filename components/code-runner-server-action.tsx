@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import PlayIcon from "@/components/icons/play-icon";
-import Spinner from "@/components/spinner";
-import { useActionState } from "react";
+import { useActionState } from 'react';
+import PlayIcon from '@/components/icons/play-icon';
+import Spinner from '@/components/spinner';
 
 export default function CodeRunnerServerAction({
   code,
@@ -23,8 +23,8 @@ export default function CodeRunnerServerAction({
 
           <form action={action} className="mt-4">
             <button
+              className="inline-flex rounded border border-gray-300 px-2.5 py-1 text-gray-600 text-sm transition enabled:hover:bg-gray-100 disabled:opacity-75"
               disabled={isPending}
-              className="inline-flex rounded border border-gray-300 px-2.5 py-1 text-sm text-gray-600 transition enabled:hover:bg-gray-100 disabled:opacity-75"
             >
               <Spinner loading={isPending}>
                 <span className="inline-flex items-center gap-1">

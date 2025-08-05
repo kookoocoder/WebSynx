@@ -1,40 +1,40 @@
-import type { Metadata } from "next";
-import PlausibleProvider from "next-plausible";
-import "./globals.css";
-import { Inter } from "next/font/google";
+import type { Metadata } from 'next';
+import PlausibleProvider from 'next-plausible';
+import './globals.css';
+import { Inter } from 'next/font/google';
 // import { ThemeProvider } from "@/components/theme-provider"; // Commented out - Fix path
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 // Define the font instance
 const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter", // Ensure this matches CSS variable if used
+  subsets: ['latin'],
+  variable: '--font-inter', // Ensure this matches CSS variable if used
 });
 
-let title = "WebSynx - AI Chat";
-let description = "Interact with advanced AI models.";
-let url = "https://websynx.vercel.app"; // Ensure this is your production URL
-let ogimage = `${url}/og-image.png`; // Use template literal for consistency
-let sitename = "WebSynx"; // Or your actual site name
+const title = 'WebSynx - AI Chat';
+const description = 'Interact with advanced AI models.';
+const url = 'https://websynx.vercel.app'; // Ensure this is your production URL
+const ogimage = `${url}/og-image.png`; // Use template literal for consistency
+const sitename = 'WebSynx'; // Or your actual site name
 
 export const metadata: Metadata = {
   metadataBase: new URL(url),
   title,
   description,
   icons: {
-    icon: "/websynx-logo.png", // Ensure this path is correct in /public
+    icon: '/websynx-logo.png', // Ensure this path is correct in /public
   },
   openGraph: {
     images: [ogimage],
     title,
     description,
-    url: url,
+    url,
     siteName: sitename,
-    locale: "en_US",
-    type: "website",
+    locale: 'en_US',
+    type: 'website',
   },
   twitter: {
-    card: "summary_large_image",
+    card: 'summary_large_image',
     images: [ogimage],
     title,
     description,
@@ -47,7 +47,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="h-full scrollbar-hide">
+    <html className="scrollbar-hide h-full" lang="en" suppressHydrationWarning>
       {/* Ensure no whitespace directly inside head */}
       <head>
         <PlausibleProvider domain="websynx.vercel.app" />
@@ -58,20 +58,21 @@ export default function RootLayout({
       {/* Only ONE body tag should exist, defined here */}
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased",
-          "bg-gray-900 text-gray-100", // Base styles
+          'min-h-screen bg-background font-sans antialiased',
+          'bg-gray-900 text-gray-100', // Base styles
           inter.variable // Use the defined font variable
         )}
       >
-         {/* ThemeProvider wrapper commented out - Fix path and uncomment later */}
-         {/* <ThemeProvider
+        {/* ThemeProvider wrapper commented out - Fix path and uncomment later */}
+        {/* <ThemeProvider
           attribute="class"
           defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
-        > */} 
-          {children} {/* Child components should NOT render <html>, <head>, or <body> */}
-         {/* </ThemeProvider> */} 
+        > */}
+        {children}{' '}
+        {/* Child components should NOT render <html>, <head>, or <body> */}
+        {/* </ThemeProvider> */}
       </body>
     </html>
   );

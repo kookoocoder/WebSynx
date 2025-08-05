@@ -1,7 +1,7 @@
-import { supabase } from "@/lib/supabaseClient";
-import { notFound } from "next/navigation";
-import { cache } from "react";
-import PageClient from "./page.client";
+import { notFound } from 'next/navigation';
+import { cache } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import PageClient from './page.client';
 
 export default async function Page({
   params,
@@ -30,11 +30,11 @@ const getChatById = cache(async (id: string) => {
     .maybeSingle();
 
   if (error) {
-    console.error("Supabase error fetching chat:", error);
+    console.error('Supabase error fetching chat:', error);
     return null;
   }
   if (!chatData) {
-     return null;
+    return null;
   }
 
   // Ensure messages are sorted correctly (optional safety check)
@@ -56,16 +56,21 @@ const getChatById = cache(async (id: string) => {
       content: msg.content,
       chat_id: msg.chat_id,
       position: msg.position,
-      created_at: msg.created_at
-    }))
+      created_at: msg.created_at,
+    })),
   };
 
   // Return the plain object instead of the direct Supabase result
   return plainChat;
 });
 
-export type Message = NonNullable<Awaited<ReturnType<typeof getChatById>>>['messages'][number];
-export type Chat = Omit<NonNullable<Awaited<ReturnType<typeof getChatById>>>, 'messages'> & { messages: Message[] };
+export type Message = NonNullable<
+  Awaited<ReturnType<typeof getChatById>>
+>['messages'][number];
+export type Chat = Omit<
+  NonNullable<Awaited<ReturnType<typeof getChatById>>>,
+  'messages'
+> & { messages: Message[] };
 
-export const runtime = "edge";
+export const runtime = 'edge';
 export const maxDuration = 45;

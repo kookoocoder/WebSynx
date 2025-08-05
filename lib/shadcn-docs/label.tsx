@@ -1,4 +1,4 @@
-export const name = "Label";
+export const name = 'Label';
 
 export const importDocs = `
 import { Label } from "/components/ui/label"
