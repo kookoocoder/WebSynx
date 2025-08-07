@@ -10,6 +10,7 @@ import {
   screenshotToCodePrompt,
   softwareArchitectPrompt,
 } from '@/lib/prompts';
+import { examples } from '@/lib/shadcn-examples';
 import { supabase /*, getSupabaseAdmin */ } from '@/lib/supabaseClient'; // Standard client for RLS
 
 // Helper function for error handling (optional but recommended)
@@ -94,37 +95,34 @@ export async function createChat(
   }
 
   async function fetchTopExample() {
+    const shadcnExamples = Object.keys(examples).join('\n');
     const findSimilarExamples = await together.chat.completions.create({
       model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
       messages: [
         {
           role: 'system',
-          content: `You are a helpful bot. Given a request for building an app, you match it to the most similar example provided. If the request is NOT similar to any of the provided examples, return "none". Here is the list of examples, ONLY reply with one of them OR "none":
-
-          - landing page
-          - blog app
-          - quiz app
-          - pomodoro timer
-          `,
+          content:
+            'You are a helpful assistant that finds the most similar example from a list of examples based on a user prompt. You will be given a list of examples and a user prompt. Your job is to return the most similar example from the list. Return only the example, nothing else.',
         },
         {
           role: 'user',
-          content: prompt,
+          content: `Examples:\n${shadcnExamples}\n\nUser prompt: ${prompt}\n\nMost similar example:`,
         },
       ],
     });
-
     const mostSimilarExample =
-      findSimilarExamples.choices[0].message?.content || 'none';
+      findSimilarExamples.choices[0].message?.content || '';
     return mostSimilarExample;
   }
 
+  // Run both async operations concurrently
   const [title, mostSimilarExample] = await Promise.all([
     fetchTitle(),
     fetchTopExample(),
   ]);
 
-  let fullScreenshotDescription;
+  let fullScreenshotDescription = '';
+
   if (screenshotUrl) {
     const screenshotResponse = await together.chat.completions.create({
       model: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
@@ -146,7 +144,7 @@ export async function createChat(
       ],
     });
 
-    fullScreenshotDescription = screenshotResponse.choices[0].message?.content;
+    fullScreenshotDescription = screenshotResponse.choices[0].message?.content || '';
   }
 
   let userMessage: string;
