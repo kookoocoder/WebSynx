@@ -26,7 +26,7 @@ import Spinner from '@/components/spinner';
 import { MODELS } from '@/lib/constants';
 import { getBrowserSupabase } from '@/lib/supabase-browser';
 import { createMessage } from '../../actions';
-import type { Chat } from './page';
+import type { Chat } from './page.client';
 
 export default function ChatBox({
   chat,

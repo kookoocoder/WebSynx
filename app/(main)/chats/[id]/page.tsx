@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import { cookies } from 'next/headers';
 import { getServerSupabase } from '@/lib/supabase-server';
 import PageClient from './page.client';
 
@@ -16,33 +15,38 @@ export default async function Page({
 
   const supabase = await getServerSupabase(false);
 
-  const { data: chatData, error } = await supabase
+  // Fetch chat metadata first (lets RLS fail fast if not owner)
+  const { data: chatRow, error: chatError } = await supabase
     .from('chats')
-    .select(
-      `
-      *,
-      messages ( * )
-    `
-    )
+    .select('id, model, prompt, title, shadcn, created_at')
     .eq('id', id)
-    .order('position', { referencedTable: 'messages', ascending: true })
-    .maybeSingle();
+    .single();
 
-  if (error || !chatData) {
-    console.error('Supabase error fetching chat:', error);
+  if (chatError || !chatRow) {
+    console.error('Failed to load chat row', { id, chatError });
+    notFound();
+  }
+
+  // Fetch messages separately
+  const { data: messages, error: messagesError } = await supabase
+    .from('messages')
+    .select('id, role, content, chat_id, position, created_at')
+    .eq('chat_id', id)
+    .order('position', { ascending: true });
+
+  if (messagesError) {
+    console.error('Failed to load chat messages', { id, messagesError });
     notFound();
   }
 
   const chat = {
-    id: chatData.id,
-    model: chatData.model,
-    quality: chatData.quality,
-    prompt: chatData.prompt,
-    title: chatData.title,
-    llamaCoderVersion: chatData.llamaCoderVersion,
-    shadcn: chatData.shadcn,
-    created_at: chatData.created_at,
-    messages: chatData.messages.map((msg: any) => ({
+    id: chatRow.id,
+    model: chatRow.model,
+    prompt: chatRow.prompt,
+    title: chatRow.title,
+    shadcn: chatRow.shadcn,
+    created_at: chatRow.created_at,
+    messages: (messages ?? []).map((msg) => ({
       id: msg.id,
       role: msg.role,
       content: msg.content,
@@ -50,7 +54,7 @@ export default async function Page({
       position: msg.position,
       created_at: msg.created_at,
     })),
-  };
+  } as const;
 
   return <PageClient chat={chat} />;
 }

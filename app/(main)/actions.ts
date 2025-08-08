@@ -24,7 +24,6 @@ async function handleSupabaseError(query: any, context: string) {
 export async function createChat(
   prompt: string,
   model: string,
-  quality: 'high' | 'low',
   screenshotUrl: string | undefined
 ) {
   // Next 15: await cookies() and pass a function wrapper
@@ -37,7 +36,6 @@ export async function createChat(
   // Prepare chat object with or without user_id
   const chatObject: any = {
     model,
-    quality,
     prompt,
     title: '',
     shadcn: true,
@@ -145,34 +143,21 @@ export async function createChat(
     fullScreenshotDescription = screenshotResponse.choices[0].message?.content || '';
   }
 
-  let userMessage: string;
-  if (quality === 'high') {
+  let userMessage: string = prompt;
+  if (fullScreenshotDescription) {
     const initialRes = await together.chat.completions.create({
       model: 'Qwen/Qwen2.5-Coder-32B-Instruct',
       messages: [
-        {
-          role: 'system',
-          content: softwareArchitectPrompt,
-        },
+        { role: 'system', content: softwareArchitectPrompt },
         {
           role: 'user',
-          content: fullScreenshotDescription
-            ? fullScreenshotDescription + prompt
-            : prompt,
+          content: fullScreenshotDescription + '\n' + prompt,
         },
       ],
       temperature: 0.2,
       max_tokens: 3000,
     });
-
     userMessage = initialRes.choices[0].message?.content ?? prompt;
-  } else if (fullScreenshotDescription) {
-    userMessage =
-      prompt +
-      'RECREATE THIS APP AS CLOSELY AS POSSIBLE: ' +
-      fullScreenshotDescription;
-  } else {
-    userMessage = prompt;
   }
 
   // Update chat with title and create initial messages using the SERVER ACTION client
@@ -287,4 +272,58 @@ export async function createMessage(
   );
 
   return newMessageData;
+}
+
+export async function renameChat(chatId: string, newTitle: string) {
+  const supabase = await getServerSupabase(true);
+
+  const { data: userData } = await supabase.auth.getUser();
+  const currentUserId = userData.user?.id;
+  if (currentUserId) {
+    try {
+      const { data: chatRow } = await supabase
+        .from('chats')
+        .select('user_id')
+        .eq('id', chatId)
+        .single();
+      if (chatRow?.user_id && chatRow.user_id !== currentUserId) {
+        throw new Error('Not allowed to rename this chat');
+      }
+    } catch (_) {}
+  }
+
+  const { error } = await supabase
+    .from('chats')
+    .update({ title: newTitle })
+    .eq('id', chatId);
+  if (error) throw new Error(error.message);
+
+  // Do not revalidate paths; sidebar updates via Realtime and optimistically
+}
+
+export async function deleteChat(chatId: string) {
+  const supabase = await getServerSupabase(true);
+
+  // Optional ownership check
+  const { data: userData } = await supabase.auth.getUser();
+  const currentUserId = userData.user?.id;
+  if (currentUserId) {
+    try {
+      const { data: chatRow } = await supabase
+        .from('chats')
+        .select('user_id')
+        .eq('id', chatId)
+        .single();
+      if (chatRow?.user_id && chatRow.user_id !== currentUserId) {
+        throw new Error('Not allowed to delete this chat');
+      }
+    } catch (_) {}
+  }
+
+  // Delete messages first if no cascade
+  await supabase.from('messages').delete().eq('chat_id', chatId);
+  const { error } = await supabase.from('chats').delete().eq('id', chatId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/');
 }

@@ -7,7 +7,6 @@ import '@splinetool/runtime';
 import type { Session } from '@supabase/supabase-js'; // Import Session type
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
-import { DemoControls } from '@/components/demo-controls';
 import Sidebar from '@/components/sidebar';
 import { getBrowserSupabase } from '@/lib/supabase-browser';
 
@@ -120,7 +119,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <div className="relative z-10 flex flex-grow flex-col">{children}</div>
 
         <Toaster />
-        <DemoControls />
       </div>
     </Providers>
   );

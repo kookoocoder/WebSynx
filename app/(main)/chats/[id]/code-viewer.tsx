@@ -18,7 +18,8 @@ import ChevronRightIcon from '@/components/icons/chevron-right';
 import CloseIcon from '@/components/icons/close-icon';
 import RefreshIcon from '@/components/icons/refresh';
 import { extractFirstCodeBlock, splitByFirstCodeFence } from '@/lib/utils';
-import type { Chat, Message } from './page';
+import type { Chat } from './page.client';
+type Message = Chat['messages'][number];
 import { Share } from './share';
 
 const CodeRunner = dynamic(() => import('@/components/code-runner'), {

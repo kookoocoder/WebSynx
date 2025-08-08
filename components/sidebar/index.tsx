@@ -40,28 +40,24 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
 
   const supabase = getBrowserSupabase();
 
-  // Function to fetch user session and chat history
   const fetchUserAndChats = useCallback(async () => {
     try {
-      setLoading(true);
+      // do not clear UI; keep previous list for smoother UX
+      setLoading(chatHistory.length === 0);
 
-      // Get current user
       const {
         data: { user: currentUser },
       } = await supabase.auth.getUser();
       setUser(currentUser);
 
-      // Fetch chat history
       let query = supabase
         .from('chats')
         .select('id, title, created_at, user_id')
         .order('created_at', { ascending: false });
 
-      // If user is logged in, only fetch their chats
       if (currentUser) {
         query = query.eq('user_id', currentUser.id);
       } else {
-        // If no user, fetch chats without user_id (anonymous chats)
         query = query.is('user_id', null);
       }
 
@@ -70,44 +66,94 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
       if (error) {
         console.error('Error fetching chat history:', error);
         setChatHistory([]);
-      } else {
-        setChatHistory(chats || []);
+      } else if (chats) {
+        setChatHistory(chats);
       }
     } catch (error) {
       console.error('Error in fetchUserAndChats:', error);
-      setChatHistory([]);
+      if (chatHistory.length === 0) setChatHistory([]);
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, chatHistory.length]);
 
-  // Fetch user session and chat history
+  // Initial fetch and auth change handling
   useEffect(() => {
     fetchUserAndChats();
-
-    // Listen for auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        await fetchUserAndChats();
-      }
+    } = supabase.auth.onAuthStateChange(async () => {
+      await fetchUserAndChats();
     });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [fetchUserAndChats, supabase]);
 
-  // Refresh chat history when pathname changes (new chat created)
+  // Realtime updates: keep list fresh without reloading on navigation
   useEffect(() => {
-    if (pathname.includes('/chats/')) {
-      const timer = setTimeout(() => {
-        fetchUserAndChats();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [pathname, fetchUserAndChats]);
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    const setup = async () => {
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
+
+      channel = supabase
+        .channel('realtime:chats')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'chats',
+            // no filter needed; we will filter client-side if user exists
+          },
+          (payload) => {
+            setChatHistory((prev) => {
+              const rowAny = (payload.new ?? payload.old) as Partial<Chat> | null | undefined;
+              if (!rowAny || !rowAny.id) return prev;
+
+              // For signed-in users, only react to their chats
+              if (user?.id && rowAny.user_id && rowAny.user_id !== user.id) {
+                return prev;
+              }
+
+              if (payload.eventType === 'INSERT') {
+                const next = [rowAny as Chat, ...prev.filter((c) => c.id !== rowAny.id!)];
+                return next.sort(
+                  (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                );
+              }
+              if (payload.eventType === 'UPDATE') {
+                const next = prev.map((c) => (c.id === rowAny.id ? (rowAny as Chat) : c));
+                return next.sort(
+                  (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                );
+              }
+              if (payload.eventType === 'DELETE') {
+                return prev.filter((c) => c.id !== rowAny.id);
+              }
+              return prev;
+            });
+          }
+        )
+        .subscribe();
+    };
+
+    void setup();
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [supabase, user?.id]);
+
+  // Optimistic title sync from item-level events
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ id: string; title: string }>).detail;
+      if (!detail) return;
+      setChatHistory((prev) => prev.map((c) => (c.id === detail.id ? { ...c, title: detail.title } : c)));
+    };
+    window.addEventListener('chat:title:update' as any, handler);
+    return () => window.removeEventListener('chat:title:update' as any, handler);
+  }, []);
 
   const filteredHistory = useMemo(
     () =>
@@ -121,17 +167,10 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
   useEffect(() => {
     const isInChatPage = pathname.includes('/chats/');
     const isMediumScreen = window.innerWidth < 1024; // lg breakpoint
-
-    if (isInChatPage && isMediumScreen) {
-      setIsExpanded(false);
-    }
-
+    if (isInChatPage && isMediumScreen) setIsExpanded(false);
     const handleResize = () => {
-      if (isInChatPage && window.innerWidth < 1024) {
-        setIsExpanded(false);
-      }
+      if (isInChatPage && window.innerWidth < 1024) setIsExpanded(false);
     };
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [pathname]);
@@ -146,7 +185,6 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
     }
   }, [isExpanded]);
 
-  // Handle new chat creation
   const handleNewChat = () => {
     setIsExpanded(false);
     router.push('/');
@@ -158,11 +196,8 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
     }, 100);
   };
 
-  // Function to handle clicking the search icon when collapsed
   const handleCollapsedSearchClick = () => {
-    if (!isExpanded) {
-      setIsExpanded(true);
-    }
+    if (!isExpanded) setIsExpanded(true);
   };
 
   // Keyboard shortcut for search (Ctrl+K or Cmd+K)
@@ -214,6 +249,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
         transition={{ duration: 0.2, ease: 'easeInOut' }}
       >
         <div className="flex h-full flex-col">
+          {/* header */}
           <div className="flex h-16 items-center justify-between border-purple-700/20 border-b p-3">
             {isExpanded && (
               <Link className="flex items-center gap-2" href="/">
@@ -230,6 +266,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
             </button>
           </div>
 
+          {/* search and new chat */}
           <div className="mt-2 p-2">
             <button
               aria-label="Start new chat"
@@ -273,6 +310,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
             )}
           </div>
 
+          {/* list */}
           <div className="scrollbar-hide flex-1 overflow-y-auto">
             <AnimatePresence initial={false}>
               <FramerMotion.div
@@ -283,14 +321,14 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
                 key={searchQuery}
                 transition={{ duration: 0.15 }}
               >
-                {loading && isExpanded && (
+                {loading && chatHistory.length === 0 && isExpanded && (
                   <div className="px-3 py-2 text-center text-gray-400 text-sm">Loading chats...</div>
                 )}
 
                 {!loading && isExpanded && filteredHistory.length > 0 ? (
                   filteredHistory.map((chat) => (
                     <ChatHistoryItem
-                      chat={{ id: chat.id, title: chat.title, timestamp: new Date(chat.created_at) }}
+                      chat={{ id: chat.id, title: chat.title }}
                       isActive={pathname === `/chats/${chat.id}`}
                       isExpanded={isExpanded}
                       key={chat.id}
@@ -305,6 +343,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
             </AnimatePresence>
           </div>
 
+          {/* footer */}
           {isExpanded && (
             <div className="mt-auto border-purple-700/20 border-t p-3">
               {user ? (

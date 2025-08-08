@@ -41,7 +41,6 @@ export default function Home() {
 
   const [prompt, setPrompt] = useState('');
   const [model, setModel] = useState(MODELS[0].value);
-  const [quality, setQuality] = useState('high');
   const [screenshotUrls, setScreenshotUrls] = useState<string[]>([]);
   const [screenshotLoading, setScreenshotLoading] = useState(false);
   const [splineLoaded, setSplineLoaded] = useState(false);
@@ -247,21 +246,19 @@ export default function Home() {
           <form
             action={async (formData) => {
               startTransition(async () => {
-                const { prompt, model, quality } = Object.fromEntries(formData);
+                const { prompt, model } = Object.fromEntries(formData);
 
                 assert.ok(typeof prompt === 'string');
                 assert.ok(typeof model === 'string');
-                assert.ok(quality === 'high' || quality === 'low');
 
-                // Send only the first screenshot URL, if available, due to createChat limitations
+                // Send only the first screenshot URL, if available
                 const firstScreenshotUrl =
                   screenshotUrls.length > 0 ? screenshotUrls[0] : undefined;
 
                 const { chatId, lastMessageId } = await createChat(
                   prompt,
                   model,
-                  quality,
-                  firstScreenshotUrl // Pass only the first URL
+                  firstScreenshotUrl
                 );
 
                 const streamPromise = fetch(
@@ -397,50 +394,6 @@ export default function Home() {
                                   </Select.ItemIndicator>
                                 </Select.Item>
                               ))}
-                            </Select.Group>
-                          </Select.Viewport>
-                        </Select.Content>
-                      </Select.Portal>
-                    </Select.Root>
-
-                    <Select.Root
-                      name="quality"
-                      onValueChange={setQuality}
-                      value={quality}
-                    >
-                      <Select.Trigger className="inline-flex items-center gap-1 rounded-md p-1 text-gray-300 text-sm hover:bg-gray-700 hover:text-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500">
-                        <Select.Value aria-label={quality}>
-                          <span className="capitalize">{quality} Quality</span>
-                        </Select.Value>
-                        <ChevronDownIcon className="h-4 w-4" />
-                      </Select.Trigger>
-                      <Select.Portal>
-                        <Select.Content
-                          className="data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border border-gray-700 bg-gray-800 text-gray-300 shadow-lg data-[state=closed]:animate-out data-[state=open]:animate-in"
-                          position="popper"
-                        >
-                          <Select.Viewport className="p-1">
-                            <Select.Group>
-                              <Select.Item
-                                className="relative flex cursor-default select-none items-center rounded-sm py-1.5 pr-2 pl-8 text-sm outline-none focus:bg-gray-700 focus:text-gray-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-                                key="high"
-                                value="high"
-                              >
-                                <Select.ItemText>High Quality</Select.ItemText>
-                                <Select.ItemIndicator className="absolute left-0 inline-flex w-8 items-center justify-center">
-                                  <CheckIcon className="h-4 w-4" />
-                                </Select.ItemIndicator>
-                              </Select.Item>
-                              <Select.Item
-                                className="relative flex cursor-default select-none items-center rounded-sm py-1.5 pr-2 pl-8 text-sm outline-none focus:bg-gray-700 focus:text-gray-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-                                key="low"
-                                value="low"
-                              >
-                                <Select.ItemText>Low Quality</Select.ItemText>
-                                <Select.ItemIndicator className="absolute left-0 inline-flex w-8 items-center justify-center">
-                                  <CheckIcon className="h-4 w-4" />
-                                </Select.ItemIndicator>
-                              </Select.Item>
                             </Select.Group>
                           </Select.Viewport>
                         </Select.Content>
@@ -707,25 +660,6 @@ export default function Home() {
               <div className="group rounded-xl border border-purple-700/10 bg-gray-800/50 p-4 backdrop-blur-sm transition-all duration-500 hover:bg-gray-800/70">
                 <div className="flex w-full items-center justify-between text-left">
                   <h3 className="font-medium text-lg text-white">
-                    What&apos;s the difference between High and Low Quality
-                    settings?
-                  </h3>
-                  <div className="rounded-full bg-gray-700/50 p-1">
-                    <ChevronDownIcon className="h-5 w-5 text-purple-400 transition-transform duration-500 group-hover:rotate-180" />
-                  </div>
-                </div>
-                <div className="mt-0 max-h-0 overflow-hidden text-gray-300 text-sm transition-all duration-700 ease-in-out group-hover:mt-2 group-hover:max-h-40">
-                  High Quality mode uses our most powerful AI model to create
-                  complex, feature-rich websites with more detailed designs. Low
-                  Quality is faster and suitable for quick prototypes or simpler
-                  websites. Choose based on your needs and time constraints.
-                </div>
-              </div>
-
-              {/* FAQ Item 6 */}
-              <div className="group rounded-xl border border-purple-700/10 bg-gray-800/50 p-4 backdrop-blur-sm transition-all duration-500 hover:bg-gray-800/70">
-                <div className="flex w-full items-center justify-between text-left">
-                  <h3 className="font-medium text-lg text-white">
                     Can I customize the website after it&apos;s generated?
                   </h3>
                   <div className="rounded-full bg-gray-700/50 p-1">
@@ -740,7 +674,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* FAQ Item 7 */}
+              {/* FAQ Item 6 */}
               <div className="group rounded-xl border border-purple-700/10 bg-gray-800/50 p-4 backdrop-blur-sm transition-all duration-500 hover:bg-gray-800/70">
                 <div className="flex w-full items-center justify-between text-left">
                   <h3 className="font-medium text-lg text-white">
@@ -764,9 +698,7 @@ export default function Home() {
       {isPending && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="rounded-lg border border-purple-700/15 bg-gray-800/90 p-6 shadow-xl">
-            <LoadingMessage
-              isHighQuality={quality === 'high'}
-              screenshotUrl={
+            <LoadingMessage screenshotUrl={
                 screenshotUrls.length > 0 ? screenshotUrls[0] : undefined
               }
             />
@@ -886,10 +818,8 @@ export default function Home() {
 }
 
 function LoadingMessage({
-  isHighQuality,
   screenshotUrl,
 }: {
-  isHighQuality: boolean;
   screenshotUrl: string | undefined;
 }) {
   if (screenshotUrl) {
@@ -902,9 +832,7 @@ function LoadingMessage({
 
   return (
     <p className="mt-4 text-center text-base text-gray-400">
-      {isHighQuality
-        ? 'Creating your website with high quality output. This might take a minute...'
-        : 'Creating your website with standard quality output. This should be quick...'}
+      Creating your website. This might take a minute...
     </p>
   );
 }

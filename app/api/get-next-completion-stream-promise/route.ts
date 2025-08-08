@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let messages;
+  let messages: z.infer<typeof messagesSchema> = [];
   try {
     messages = messagesSchema.parse(messagesRes ?? []);
   } catch (validationError) {

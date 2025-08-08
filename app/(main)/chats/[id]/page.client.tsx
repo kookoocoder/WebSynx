@@ -13,7 +13,24 @@ import ChatBox from './chat-box';
 import ChatLog from './chat-log';
 import CodeViewer from './code-viewer';
 import CodeViewerLayout from './code-viewer-layout';
-import type { Chat } from './page';
+
+export type Chat = {
+  id: string;
+  model: string;
+  prompt: string;
+  title: string;
+  llamaCoderVersion?: string;
+  shadcn?: boolean;
+  created_at: string;
+  messages: Array<{
+    id: string;
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+    chat_id: string;
+    position: number;
+    created_at: string;
+  }>;
+};
 
 export default function PageClient({ chat }: { chat: Chat }) {
   const context = use(Context);

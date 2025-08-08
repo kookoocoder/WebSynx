@@ -11,7 +11,8 @@ import { StickToBottom } from 'use-stick-to-bottom';
 import ArrowLeftIcon from '@/components/icons/arrow-left';
 import ThinkingPill from '@/components/thinking-pill';
 import { splitByFirstCodeFence } from '@/lib/utils';
-import type { Chat, Message } from './page';
+import type { Chat } from './page.client';
+type Message = Chat['messages'][number];
 
 // Regex to find markdown image links like [Image](url)
 const imageLinkRegex = /\n\n\[Image\]\(([^)]+)\)/g;
