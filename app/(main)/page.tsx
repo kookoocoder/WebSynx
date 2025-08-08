@@ -24,7 +24,7 @@ import LoadingButton from '@/components/loading-button';
 import Spinner from '@/components/spinner';
 import { UserAuthNav } from '@/components/user-auth-nav';
 import { MODELS, SUGGESTED_PROMPTS } from '@/lib/constants';
-import { supabase } from '@/lib/supabaseClient';
+import { getBrowserSupabase } from '@/lib/supabase-browser';
 import { createChat } from './actions';
 import { Context } from './providers';
 import '@splinetool/runtime';
@@ -36,6 +36,8 @@ export default function Home() {
   const { setStreamPromise } = use(Context);
   const router = useRouter();
   const pathname = usePathname();
+
+  const supabase = getBrowserSupabase();
 
   const [prompt, setPrompt] = useState('');
   const [model, setModel] = useState(MODELS[0].value);
@@ -78,7 +80,6 @@ export default function Home() {
 
   const onSplineLoad = (splineApp: any) => {
     console.log('Spline loaded successfully');
-    setSplineLoaded(true);
     splineRef.current = splineApp;
   };
 
@@ -267,6 +268,7 @@ export default function Home() {
                   '/api/get-next-completion-stream-promise',
                   {
                     method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ messageId: lastMessageId, model }),
                   }
                 ).then((res) => {

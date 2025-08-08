@@ -9,7 +9,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { DemoControls } from '@/components/demo-controls';
 import Sidebar from '@/components/sidebar';
-import { supabase } from '@/lib/supabaseClient';
+import { getBrowserSupabase } from '@/lib/supabase-browser';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -23,6 +23,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true); // Start as loading
 
+  const supabase = getBrowserSupabase();
+
   useEffect(() => {
     let isMounted = true; // Track component mount status
 
@@ -32,21 +34,18 @@ export default function MainLayout({ children }: MainLayoutProps) {
         const {
           data: { session: initialSession },
         } = await supabase.auth.getSession();
-        if (isMounted) {
-          setSession(initialSession);
-          // If no session found client-side after middleware should have protected, redirect
-          if (initialSession) {
-            setLoading(false); // We have a session, stop loading
-          } else {
-            console.warn(
-              'MainLayout: No session found client-side, redirecting to /login.'
-            );
-            router.push('/login');
-          }
+        if (!isMounted) return;
+        setSession(initialSession);
+        if (initialSession) {
+          setLoading(false);
+        } else {
+          setLoading(false); // Ensure we stop loading even if redirecting
+          router.push('/login');
         }
       } catch (error) {
         console.error('MainLayout: Error fetching initial session:', error);
         if (isMounted) {
+          setLoading(false);
           router.push('/login'); // Redirect on error
         }
       }
@@ -56,25 +55,23 @@ export default function MainLayout({ children }: MainLayoutProps) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      if (isMounted) {
-        setSession(currentSession);
-        setLoading(false); // Auth state confirmed, stop loading
-        if (!currentSession) {
-          // Redirect to login if user logs out
-          router.push('/login');
-        }
+      if (!isMounted) return;
+      setSession(currentSession);
+      setLoading(false); // Auth state confirmed, stop loading
+      if (!currentSession) {
+        router.push('/login');
       }
     });
 
     // Check the initial session state when the component mounts
-    checkInitialSession();
+    void checkInitialSession();
 
     // Cleanup listener and mount status on unmount
     return () => {
       isMounted = false;
       subscription?.unsubscribe();
     };
-  }, [supabase, router]);
+  }, [router]);
 
   const onSplineLoad = () => {
     console.log('Spline loaded successfully');
@@ -94,11 +91,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
     );
   }
 
-  // If loading is finished but there's still no session, redirect (extra safety)
+  // If loading is finished but there's still no session, rely on redirect
   if (!session) {
-    console.log('MainLayout: Render check - No session, redirecting.');
-    // router.push('/login'); // This might be too aggressive, rely on initial check/listener
-    return null; // Render nothing while redirect happens
+    return null;
   }
 
   // Render the main layout content only if loading is false AND session exists
@@ -109,14 +104,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
           {!splineLoaded && (
             <div className="h-full w-full bg-gradient-to-b from-purple-800/5 via-gray-950/90 to-black" />
           )}
-          <div className="absolute inset-0">
+          {/*<div className="absolute inset-0">
             <div style={{ width: '100%', height: '100vh' }}>
               <Spline
                 onLoad={onSplineLoad}
                 scene="https://prod.spline.design/BOkXM57f9uxGIpdm/scene.splinecode"
               />
             </div>
-          </div>
+          </div>*/}
           <div className="absolute inset-0 z-[1] bg-gradient-to-b from-purple-800/30 via-black/60 to-black/80" />
         </div>
 

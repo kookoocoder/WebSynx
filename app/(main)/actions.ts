@@ -1,8 +1,6 @@
 'use server';
 
-import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // Import helper for server actions
-import { revalidatePath } from 'next/cache'; // Import revalidatePath
-import { cookies } from 'next/headers'; // Import cookies helper
+import { revalidatePath } from 'next/cache';
 import { notFound } from 'next/navigation';
 import Together from 'together-ai';
 import {
@@ -11,7 +9,7 @@ import {
   softwareArchitectPrompt,
 } from '@/lib/prompts';
 import { examples } from '@/lib/shadcn-examples';
-import { supabase /*, getSupabaseAdmin */ } from '@/lib/supabaseClient'; // Standard client for RLS
+import { getServerSupabase } from '@/lib/supabase-server';
 
 // Helper function for error handling (optional but recommended)
 async function handleSupabaseError(query: any, context: string) {
@@ -29,8 +27,8 @@ export async function createChat(
   quality: 'high' | 'low',
   screenshotUrl: string | undefined
 ) {
-  // Create a Supabase client for Server Actions to get user session if available
-  const supabaseServerClient = createServerActionClient({ cookies });
+  // Next 15: await cookies() and pass a function wrapper
+  const supabaseServerClient = await getServerSupabase(true);
 
   // Try to get the user, but don't require it
   const { data } = await supabaseServerClient.auth.getUser();
@@ -77,7 +75,7 @@ export async function createChat(
 
   async function fetchTitle() {
     const responseForChatTitle = await together.chat.completions.create({
-      model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+      model: 'openai/gpt-oss-20b',
       messages: [
         {
           role: 'system',
@@ -97,7 +95,7 @@ export async function createChat(
   async function fetchTopExample() {
     const shadcnExamples = Object.keys(examples).join('\n');
     const findSimilarExamples = await together.chat.completions.create({
-      model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+      model: 'openai/gpt-oss-20b',
       messages: [
         {
           role: 'system',
@@ -181,8 +179,8 @@ export async function createChat(
   const systemMessageContent = getMainCodingPrompt(mostSimilarExample);
 
   // Insert initial messages using the SERVER ACTION client
-  await handleSupabaseError(
-    supabaseServerClient // Use server client here too
+  const insertedMessages = await handleSupabaseError(
+    supabaseServerClient
       .from('messages')
       .insert([
         {
@@ -192,7 +190,9 @@ export async function createChat(
           chat_id: chatId,
         },
         { role: 'user', content: userMessage, position: 1, chat_id: chatId },
-      ]),
+      ])
+      .select('id, position')
+      .order('position', { ascending: true }),
     'insert initial messages'
   );
 
@@ -208,23 +208,18 @@ export async function createChat(
   // Invalidate the cache for the chat page
   revalidatePath(`/chats/${chatId}`);
 
-  // Find the last message using the SERVER ACTION client
-  const lastMessageData = await handleSupabaseError(
-    supabaseServerClient // Use server client here too
-      .from('messages')
-      .select('id')
-      .eq('chat_id', chatId)
-      .eq('position', 1)
-      .single(),
-    'find last message'
-  );
+  // Extract the user message id from the insert response to avoid a follow-up SELECT
+  const userMessageRow = Array.isArray(insertedMessages)
+    ? insertedMessages.find((m: { position: number }) => m.position === 1)
+    : null;
 
-  if (!lastMessageData?.id)
-    throw new Error('Could not find the created user message');
+  if (!userMessageRow?.id) {
+    throw new Error('Could not determine the created user message id');
+  }
 
   return {
     chatId,
-    lastMessageId: lastMessageData.id,
+    lastMessageId: userMessageRow.id as string,
   };
 }
 
@@ -233,7 +228,7 @@ export async function createMessage(
   text: string,
   role: 'assistant' | 'user'
 ) {
-  const supabaseServerClient = createServerActionClient({ cookies }); // Create server client
+  const supabaseServerClient = await getServerSupabase(true); // Create server client
 
   // Try to get the user, but don't require it
   const { data } = await supabaseServerClient.auth.getUser();
@@ -252,8 +247,6 @@ export async function createMessage(
       // If chat has an owner (user_id) and it's not the current user, don't allow them to add messages
       if (chatOwner?.user_id && chatOwner.user_id !== user.id) {
         console.warn("User trying to add message to someone else's chat");
-        // You could throw an error here, or just log and continue
-        // throw new Error("Cannot create message in someone else's chat");
       }
     } catch (error) {
       // Ignore error, continue with message creation

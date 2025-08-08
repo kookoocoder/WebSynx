@@ -1,38 +1,6 @@
-import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
-import CodeRunner from '@/components/code-runner';
-import { supabase } from '@/lib/supabaseClient';
-import { extractFirstCodeBlock } from '@/lib/utils';
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ messageId: string }>;
-}): Promise<Metadata> {
-  const { messageId } = await params;
-  const message = await getMessage(messageId);
-  if (!message) {
-    notFound();
-  }
-
-  const title = message.chat.title;
-  const searchParams = new URLSearchParams();
-  searchParams.set('prompt', title);
-
-  return {
-    title,
-    description: `An app generated on LlamaCoder.io: ${title}`,
-    openGraph: {
-      images: [`/api/og?${searchParams}`],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      images: [`/api/og?${searchParams}`],
-      title,
-    },
-  };
-}
+import { getServerSupabase } from '@/lib/supabase-server';
 
 export default async function SharePage({
   params,
@@ -40,34 +8,23 @@ export default async function SharePage({
   params: Promise<{ messageId: string }>;
 }) {
   const { messageId } = await params;
+  const data = await getMessage(messageId);
 
-  const { data: messageData, error: messageError } = await supabase
-    .from('messages')
-    .select('content')
-    .eq('id', messageId)
-    .single();
-
-  if (messageError || !messageData) {
-    console.error('Supabase error fetching message content:', messageError);
-    notFound();
-  }
-
-  const app = extractFirstCodeBlock(messageData.content);
-  if (!(app && app.language)) {
-    console.warn('Could not extract code block from message:', messageId);
-    notFound();
-  }
+  if (!data) notFound();
 
   return (
-    <div className="fixed inset-0 flex h-full w-full items-center justify-center bg-gray-900">
-      <div className="h-full max-h-none w-full max-w-none">
-        <CodeRunner code={app.code} language={app.language} />
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="mx-auto max-w-2xl space-y-6 p-4 text-center">
+        <h1 className="text-3xl font-bold">Shared Message</h1>
+        <p className="text-gray-600">{data.content}</p>
+        <p className="text-gray-400">From chat: {data.chat.title}</p>
       </div>
     </div>
   );
 }
 
 const getMessage = cache(async (messageId: string) => {
+  const supabase = await getServerSupabase(false);
   const { data, error } = await supabase
     .from('messages')
     .select('content, chats ( title )')

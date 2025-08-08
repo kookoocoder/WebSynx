@@ -1,14 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 
+import { ImageResponse } from 'next/og';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { ImageResponse } from 'next/og';
-import { supabase } from '@/lib/supabaseClient';
-
-export const size = {
-  width: 1200,
-  height: 630,
-};
+import { getServerSupabase } from '@/lib/supabase-server';
 
 export const contentType = 'image/png';
 
@@ -19,6 +14,7 @@ export default async function Image({
 }) {
   const { messageId } = params;
 
+  const supabase = await getServerSupabase(false);
   const { data: messageData, error } = await supabase
     .from('messages')
     .select(`

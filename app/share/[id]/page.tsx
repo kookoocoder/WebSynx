@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import CodeRunner from '@/components/code-runner';
-import { supabase } from '@/lib/supabaseClient';
+import { getServerSupabase } from '@/lib/supabase-server';
 
 /*
   This is the Share page for v1 apps, before the chat interface was added.
@@ -84,5 +84,6 @@ export default async function Page({
 }
 
 const getGeneratedAppByID = cache(async (id: string) => {
+  const supabase = await getServerSupabase(false);
   return supabase.from('generatedApp').select('*').eq('id', id).single();
 });

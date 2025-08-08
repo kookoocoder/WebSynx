@@ -24,7 +24,7 @@ import ArrowRightIcon from '@/components/icons/arrow-right';
 import UploadIcon from '@/components/icons/upload-icon';
 import Spinner from '@/components/spinner';
 import { MODELS } from '@/lib/constants';
-import { supabase } from '@/lib/supabaseClient';
+import { getBrowserSupabase } from '@/lib/supabase-browser';
 import { createMessage } from '../../actions';
 import type { Chat } from './page';
 
@@ -76,7 +76,7 @@ export default function ChatBox({
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `public/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await getBrowserSupabase().storage
         .from('screenshots')
         .upload(filePath, file);
 
@@ -84,7 +84,7 @@ export default function ChatBox({
         throw uploadError;
       }
 
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = getBrowserSupabase().storage
         .from('screenshots')
         .getPublicUrl(filePath);
 

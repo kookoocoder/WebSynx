@@ -1,6 +1,6 @@
 import Together from 'together-ai';
 import { z } from 'zod';
-import { supabase } from '@/lib/supabaseClient';
+import { getServerSupabase } from '@/lib/supabase-server';
 
 const messageSchema = z.object({
   role: z.enum(['system', 'user', 'assistant']),
@@ -8,17 +8,33 @@ const messageSchema = z.object({
 });
 const messagesSchema = z.array(messageSchema);
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function POST(req: Request) {
   const { messageId, model } = await req.json();
+  const supabase = await getServerSupabase(true);
 
-  const { data: targetMessage, error: targetMsgError } = await supabase
-    .from('messages')
-    .select('id, chat_id, position')
-    .eq('id', messageId)
-    .single();
+  // Retry fetching the target message in case the insert just committed
+  let targetMessage: { id: string; chat_id: string; position: number } | null = null;
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('id, chat_id, position')
+      .eq('id', messageId)
+      .single();
+    if (!error && data) {
+      targetMessage = data as any;
+      break;
+    }
+    lastErr = error;
+    await sleep(150);
+  }
 
-  if (targetMsgError || !targetMessage) {
-    console.error('Supabase error fetching target message:', targetMsgError);
+  if (!targetMessage) {
+    console.error('Supabase error fetching target message (after retries):', lastErr);
     return new Response(
       JSON.stringify({ error: 'Target message not found or DB error.' }),
       { status: 404, headers: { 'Content-Type': 'application/json' } }
@@ -42,7 +58,7 @@ export async function POST(req: Request) {
 
   let messages;
   try {
-    messages = messagesSchema.parse(messagesRes);
+    messages = messagesSchema.parse(messagesRes ?? []);
   } catch (validationError) {
     console.error('Zod validation error on fetched messages:', validationError);
     return new Response(
@@ -51,6 +67,13 @@ export async function POST(req: Request) {
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
+  }
+
+  // Ensure there is at least one system message if history is empty
+  if (!messages || messages.length === 0) {
+    messages = [
+      { role: 'system', content: 'You are a helpful coding assistant.' },
+    ];
   }
 
   if (messages.length > 10) {
@@ -62,9 +85,9 @@ export async function POST(req: Request) {
     options.baseURL = 'https://together.helicone.ai/v1';
     options.defaultHeaders = {
       'Helicone-Auth': `Bearer ${process.env.HELICONE_API_KEY}`,
-      'Helicone-Property-appname': 'LlamaCoder',
+      'Helicone-Property-appname': 'Websynx',
       'Helicone-Session-Id': targetMessage.chat_id,
-      'Helicone-Session-Name': 'LlamaCoder Chat',
+      'Helicone-Session-Name': 'Websynx Chat',
     };
   }
 
@@ -89,5 +112,5 @@ export async function POST(req: Request) {
   }
 }
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 export const maxDuration = 45;

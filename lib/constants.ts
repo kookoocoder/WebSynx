@@ -1,19 +1,15 @@
 export const MODELS = [
   {
-    label: 'Llama 4 Maverick',
-    value: 'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8',
-  },
-  {
-    label: 'DeepSeek V3',
-    value: 'deepseek-ai/DeepSeek-V3',
+    label: 'OpenAI GPT-OSS 120B',
+    value: 'openai/gpt-oss-120b',
   },
   {
     label: 'Claude lite',
     value: 'Qwen/QwQ-32B',
   },
   {
-    label: 'Llama 3.3 70B',
-    value: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+    label: 'OpenAI GPT-OSS 20B',
+    value: 'openai/gpt-oss-20b',
   },
   {
     label: 'Llama 3.1 405B',

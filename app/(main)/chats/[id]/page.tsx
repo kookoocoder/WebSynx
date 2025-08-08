@@ -1,7 +1,11 @@
 import { notFound } from 'next/navigation';
-import { cache } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { cookies } from 'next/headers';
+import { getServerSupabase } from '@/lib/supabase-server';
 import PageClient from './page.client';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 45;
 
 export default async function Page({
   params,
@@ -9,39 +13,27 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const id = (await params).id;
-  const chat = await getChatById(id);
 
-  if (!chat) notFound();
+  const supabase = await getServerSupabase(false);
 
-  return <PageClient chat={chat} />;
-}
-
-const getChatById = cache(async (id: string) => {
   const { data: chatData, error } = await supabase
     .from('chats')
-    .select(`
+    .select(
+      `
       *,
-      messages (
-        *
-      )
-    `)
+      messages ( * )
+    `
+    )
     .eq('id', id)
     .order('position', { referencedTable: 'messages', ascending: true })
     .maybeSingle();
 
-  if (error) {
+  if (error || !chatData) {
     console.error('Supabase error fetching chat:', error);
-    return null;
-  }
-  if (!chatData) {
-    return null;
+    notFound();
   }
 
-  // Ensure messages are sorted correctly (optional safety check)
-  // chatData.messages?.sort((a, b) => a.position - b.position);
-
-  // **Manually construct a plain object to ensure serialization**
-  const plainChat = {
+  const chat = {
     id: chatData.id,
     model: chatData.model,
     quality: chatData.quality,
@@ -49,8 +41,8 @@ const getChatById = cache(async (id: string) => {
     title: chatData.title,
     llamaCoderVersion: chatData.llamaCoderVersion,
     shadcn: chatData.shadcn,
-    created_at: chatData.created_at, // Keep dates as strings/ISO format if needed
-    messages: chatData.messages.map((msg: Message) => ({
+    created_at: chatData.created_at,
+    messages: chatData.messages.map((msg: any) => ({
       id: msg.id,
       role: msg.role,
       content: msg.content,
@@ -60,17 +52,5 @@ const getChatById = cache(async (id: string) => {
     })),
   };
 
-  // Return the plain object instead of the direct Supabase result
-  return plainChat;
-});
-
-export type Message = NonNullable<
-  Awaited<ReturnType<typeof getChatById>>
->['messages'][number];
-export type Chat = Omit<
-  NonNullable<Awaited<ReturnType<typeof getChatById>>>,
-  'messages'
-> & { messages: Message[] };
-
-export const runtime = 'edge';
-export const maxDuration = 45;
+  return <PageClient chat={chat} />;
+}

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabaseClient';
+import { getBrowserSupabase } from '@/lib/supabase-browser';
 
 export function UserAuthNav() {
   const router = useRouter();
@@ -15,6 +15,7 @@ export function UserAuthNav() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const supabase = getBrowserSupabase();
     const getUser = async () => {
       const {
         data: { user },
@@ -36,6 +37,7 @@ export function UserAuthNav() {
   }, []);
 
   const handleLogout = async () => {
+    const supabase = getBrowserSupabase();
     try {
       await supabase.auth.signOut();
       setIsOpen(false);
