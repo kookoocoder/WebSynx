@@ -326,14 +326,14 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
                 )}
 
                 {!loading && isExpanded && filteredHistory.length > 0 ? (
-                  filteredHistory.map((chat) => (
-                    <ChatHistoryItem
+                    filteredHistory.map((chat) => (
+                      <ChatHistoryItem
                       chat={{ id: chat.id, title: chat.title }}
-                      isActive={pathname === `/chats/${chat.id}`}
+                        isActive={pathname === `/chats/${chat.id}`}
                       isExpanded={isExpanded}
-                      key={chat.id}
-                    />
-                  ))
+                        key={chat.id}
+                      />
+                    ))
                 ) : !loading && isExpanded && searchQuery ? (
                   <div className="px-3 py-2 text-center text-gray-400 text-sm">No chats found</div>
                 ) : !loading && isExpanded ? (
@@ -355,7 +355,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
                     <div className="truncate text-sm font-medium text-gray-200">{user.email}</div>
                     <div className="text-xs text-gray-400">{chatHistory.length} chats</div>
                   </div>
-                </div>
+              </div>
               ) : (
                 <div className="py-2 text-center text-gray-400 text-xs">Anonymous user</div>
               )}

@@ -31,11 +31,14 @@ import '@splinetool/runtime';
 import { nanoid } from 'nanoid';
 import Image from 'next/image';
 import type { DragEvent } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import type { CreateChatResult } from './actions';
 
 export default function Home() {
   const { setStreamPromise } = use(Context);
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
 
   const supabase = getBrowserSupabase();
 
@@ -255,30 +258,59 @@ export default function Home() {
                 const firstScreenshotUrl =
                   screenshotUrls.length > 0 ? screenshotUrls[0] : undefined;
 
-                const { chatId, lastMessageId } = await createChat(
-                  prompt,
-                  model,
-                  firstScreenshotUrl
-                );
+                try {
+                  const result = (await createChat(
+                    prompt,
+                    model,
+                    firstScreenshotUrl
+                  )) as CreateChatResult;
 
-                const streamPromise = fetch(
-                  '/api/get-next-completion-stream-promise',
-                  {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messageId: lastMessageId, model }),
+                  if (!result.ok) {
+                    if (result.code === 'TRIAL_EXHAUSTED') {
+                      toast({
+                        title: 'Free trial used',
+                        description:
+                          'Add your Together API key in Settings to continue creating chats without limits.',
+                      });
+                      router.push('/settings');
+                      return;
+                    }
+                    if (result.code === 'AUTH_REQUIRED') {
+                      router.push('/login');
+                      return;
+                    }
+                    toast({ title: 'Unable to create chat', description: result.message || result.code });
+                    return;
                   }
-                ).then((res) => {
-                  if (!res.body) {
-                    throw new Error('No body on response');
-                  }
-                  return res;
-                });
 
-                startTransition(() => {
-                  setStreamPromise(streamPromise);
-                  router.push(`/chats/${chatId}`);
-                });
+                  const { chatId, lastMessageId } = result;
+                  if (!chatId || !lastMessageId) {
+                    toast({ title: 'Unable to create chat', description: 'Missing chat identifiers.' });
+                    return;
+                  }
+
+                  const streamPromise = fetch(
+                    '/api/get-next-completion-stream-promise',
+                    {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ messageId: lastMessageId, model }),
+                    }
+                  ).then((res) => {
+                    if (!res.body) {
+                      throw new Error('No body on response');
+                    }
+                    return res;
+                  });
+
+                  startTransition(() => {
+                    setStreamPromise(streamPromise);
+                    router.push(`/chats/${chatId}`);
+                  });
+                } catch (err: unknown) {
+                  const msg = err instanceof Error ? err.message : String(err);
+                  toast({ title: 'Something went wrong', description: msg });
+                }
               });
             }}
             className="relative w-full max-w-2xl pt-2 lg:pt-4"

@@ -1,6 +1,7 @@
 import Together from 'together-ai';
 import { z } from 'zod';
 import { getServerSupabase } from '@/lib/supabase-server';
+import { decryptFromBase64 } from '@/lib/crypto';
 
 const messageSchema = z.object({
   role: z.enum(['system', 'user', 'assistant']),
@@ -15,6 +16,32 @@ function sleep(ms: number) {
 export async function POST(req: Request) {
   const { messageId, model } = await req.json();
   const supabase = await getServerSupabase(true);
+
+  // Require auth for any usage
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'AUTH_REQUIRED' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Fetch personal key if present
+  const { data: secretRow } = await supabase
+    .from('user_secrets')
+    .select('together_api_key_ciphertext')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  let togetherApiKey: string | undefined;
+  if (secretRow?.together_api_key_ciphertext) {
+    try {
+      togetherApiKey = await decryptFromBase64(secretRow.together_api_key_ciphertext);
+    } catch (_) {
+      togetherApiKey = undefined;
+    }
+  }
 
   // Retry fetching the target message in case the insert just committed
   let targetMessage: { id: string; chat_id: string; position: number } | null = null;
@@ -34,7 +61,6 @@ export async function POST(req: Request) {
   }
 
   if (!targetMessage) {
-    console.error('Supabase error fetching target message (after retries):', lastErr);
     return new Response(
       JSON.stringify({ error: 'Target message not found or DB error.' }),
       { status: 404, headers: { 'Content-Type': 'application/json' } }
@@ -49,7 +75,6 @@ export async function POST(req: Request) {
     .order('position', { ascending: true });
 
   if (historyError) {
-    console.error('Supabase error fetching message history:', historyError);
     return new Response(
       JSON.stringify({ error: 'Failed to fetch message history.' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
@@ -59,21 +84,15 @@ export async function POST(req: Request) {
   let messages: z.infer<typeof messagesSchema> = [];
   try {
     messages = messagesSchema.parse(messagesRes ?? []);
-  } catch (validationError) {
-    console.error('Zod validation error on fetched messages:', validationError);
+  } catch {
     return new Response(
-      JSON.stringify({
-        error: 'Invalid message data format received from DB.',
-      }),
+      JSON.stringify({ error: 'Invalid message data format received from DB.' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
-  // Ensure there is at least one system message if history is empty
   if (!messages || messages.length === 0) {
-    messages = [
-      { role: 'system', content: 'You are a helpful coding assistant.' },
-    ];
+    messages = [{ role: 'system', content: 'You are a helpful coding assistant.' }];
   }
 
   if (messages.length > 10) {
@@ -91,6 +110,11 @@ export async function POST(req: Request) {
     };
   }
 
+  // Prefer user key if supplied, else fallback to server env default
+  if (togetherApiKey) {
+    options.apiKey = togetherApiKey;
+  }
+
   const together = new Together(options);
 
   try {
@@ -104,7 +128,6 @@ export async function POST(req: Request) {
 
     return new Response(res.toReadableStream());
   } catch (aiError) {
-    console.error('Together AI Error:', aiError);
     return new Response(
       JSON.stringify({ error: 'Failed to get response from AI service.' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

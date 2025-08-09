@@ -10,6 +10,7 @@ import {
 } from '@/lib/prompts';
 import { examples } from '@/lib/shadcn-examples';
 import { getServerSupabase } from '@/lib/supabase-server';
+import { encryptToBase64 } from '@/lib/crypto';
 
 // Helper function for error handling (optional but recommended)
 async function handleSupabaseError(query: any, context: string) {
@@ -21,191 +22,219 @@ async function handleSupabaseError(query: any, context: string) {
   return data;
 }
 
+export type CreateChatResult =
+  | { ok: true; chatId: string; lastMessageId: string }
+  | { ok: false; code: 'AUTH_REQUIRED' | 'TRIAL_EXHAUSTED' | 'LIMIT_CHECK_FAILED' | 'DB_ERROR' | 'UNKNOWN'; message?: string };
+
 export async function createChat(
   prompt: string,
   model: string,
   screenshotUrl: string | undefined
-) {
-  // Next 15: await cookies() and pass a function wrapper
-  const supabaseServerClient = await getServerSupabase(true);
+): Promise<CreateChatResult> {
+  try {
+    const supabaseServerClient = await getServerSupabase(true);
 
-  // Try to get the user, but don't require it
-  const { data } = await supabaseServerClient.auth.getUser();
-  const user = data?.user; // May be null if not logged in
+    const { data } = await supabaseServerClient.auth.getUser();
+    const user = data?.user;
+    if (!user) {
+      return { ok: false, code: 'AUTH_REQUIRED' };
+    }
 
-  // Prepare chat object with or without user_id
-  const chatObject: any = {
-    model,
-    prompt,
-    title: '',
-    shadcn: true,
-    websynxVersion: 'v2',
-  };
+    // Check for personal key to decide limits
+    const { data: secret, error: secretError } = await supabaseServerClient
+      .from('user_secrets')
+      .select('together_api_key_ciphertext')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (secretError) {
+      return { ok: false, code: 'LIMIT_CHECK_FAILED', message: 'Failed to verify user limits' };
+    }
+    const hasPersonalKey = !!secret?.together_api_key_ciphertext;
 
-  // Only add user_id if a user is logged in
-  if (user) {
-    chatObject.user_id = user.id;
-  }
+    // Enforce 1 free chat for users without a personal key
+    if (!hasPersonalKey) {
+      const { count, error: countError } = await supabaseServerClient
+        .from('chats')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      if (countError) return { ok: false, code: 'DB_ERROR', message: countError.message };
+      if ((count ?? 0) >= 1) {
+        return { ok: false, code: 'TRIAL_EXHAUSTED' };
+      }
+    }
 
-  // Create chat record using the SERVER ACTION client
-  const chatData = await handleSupabaseError(
-    supabaseServerClient.from('chats').insert(chatObject).select('id').single(),
-    'insert chat'
-  );
-
-  if (!chatData?.id) {
-    throw new Error('Failed to create chat or retrieve ID.');
-  }
-  const chatId = chatData.id;
-
-  const options: ConstructorParameters<typeof Together>[0] = {};
-  if (process.env.HELICONE_API_KEY) {
-    options.baseURL = 'https://together.helicone.ai/v1';
-    options.defaultHeaders = {
-      'Helicone-Auth': `Bearer ${process.env.HELICONE_API_KEY}`,
-      'Helicone-Property-appname': 'Websynx',
-      'Helicone-Session-Id': chatId, // Use the new chatId
-      'Helicone-Session-Name': 'Websynx Chat',
+    const chatObject: any = {
+      model,
+      prompt,
+      title: '',
+      shadcn: true,
+      websynxVersion: 'v2',
+      user_id: user.id,
     };
-  }
 
-  const together = new Together(options);
+    // Create chat record using the SERVER ACTION client
+    const chatData = await handleSupabaseError(
+      supabaseServerClient.from('chats').insert(chatObject).select('id').single(),
+      'insert chat'
+    );
 
-  async function fetchTitle() {
-    const responseForChatTitle = await together.chat.completions.create({
-      model: 'openai/gpt-oss-20b',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a chatbot helping the user create a simple app or script, and your current job is to create a succinct title, maximum 3-5 words, for the chat given their initial prompt. Please return only the title.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    });
-    const title = responseForChatTitle.choices[0].message?.content || prompt;
-    return title;
-  }
+    if (!chatData?.id) {
+      return { ok: false, code: 'DB_ERROR', message: 'Failed to create chat or retrieve ID.' };
+    }
+    const chatId = chatData.id as string;
 
-  async function fetchTopExample() {
-    const shadcnExamples = Object.keys(examples).join('\n');
-    const findSimilarExamples = await together.chat.completions.create({
-      model: 'openai/gpt-oss-20b',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a helpful assistant that finds the most similar example from a list of examples based on a user prompt. You will be given a list of examples and a user prompt. Your job is to return the most similar example from the list. Return only the example, nothing else.',
-        },
-        {
-          role: 'user',
-          content: `Examples:\n${shadcnExamples}\n\nUser prompt: ${prompt}\n\nMost similar example:`,
-        },
-      ],
-    });
-    const mostSimilarExample =
-      findSimilarExamples.choices[0].message?.content || '';
-    return mostSimilarExample;
-  }
+    const options: ConstructorParameters<typeof Together>[0] = {};
+    if (process.env.HELICONE_API_KEY) {
+      options.baseURL = 'https://together.helicone.ai/v1';
+      options.defaultHeaders = {
+        'Helicone-Auth': `Bearer ${process.env.HELICONE_API_KEY}`,
+        'Helicone-Property-appname': 'Websynx',
+        'Helicone-Session-Id': chatId, // Use the new chatId
+        'Helicone-Session-Name': 'Websynx Chat',
+      };
+    }
 
-  // Run both async operations concurrently
-  const [title, mostSimilarExample] = await Promise.all([
-    fetchTitle(),
-    fetchTopExample(),
-  ]);
+    const together = new Together(options);
 
-  let fullScreenshotDescription = '';
+    async function fetchTitle() {
+      const responseForChatTitle = await together.chat.completions.create({
+        model: 'openai/gpt-oss-20b',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a chatbot helping the user create a simple app or script, and your current job is to create a succinct title, maximum 3-5 words, for the chat given their initial prompt. Please return only the title.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      });
+      const title = responseForChatTitle.choices[0].message?.content || prompt;
+      return title;
+    }
 
-  if (screenshotUrl) {
-    const screenshotResponse = await together.chat.completions.create({
-      model: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
-      temperature: 0.2,
-      max_tokens: 1000,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: screenshotToCodePrompt },
-            {
-              type: 'image_url',
-              image_url: {
-                url: screenshotUrl,
+    async function fetchTopExample() {
+      const shadcnExamples = Object.keys(examples).join('\n');
+      const findSimilarExamples = await together.chat.completions.create({
+        model: 'openai/gpt-oss-20b',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a helpful assistant that finds the most similar example from a list of examples based on a user prompt. You will be given a list of examples and a user prompt. Your job is to return the most similar example from the list. Return only the example, nothing else.',
+          },
+          {
+            role: 'user',
+            content: `Examples:\n${shadcnExamples}\n\nUser prompt: ${prompt}\n\nMost similar example:`,
+          },
+        ],
+      });
+      const mostSimilarExample =
+        findSimilarExamples.choices[0].message?.content || '';
+      return mostSimilarExample;
+    }
+
+    // Run both async operations concurrently
+    const [title, mostSimilarExample] = await Promise.all([
+      fetchTitle(),
+      fetchTopExample(),
+    ]);
+
+    let fullScreenshotDescription = '';
+
+    if (screenshotUrl) {
+      const screenshotResponse = await together.chat.completions.create({
+        model: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
+        temperature: 0.2,
+        max_tokens: 1000,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: screenshotToCodePrompt },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: screenshotUrl,
+                },
               },
-            },
-          ],
-        },
-      ],
-    });
+            ],
+          },
+        ],
+      });
 
-    fullScreenshotDescription = screenshotResponse.choices[0].message?.content || '';
+      fullScreenshotDescription = screenshotResponse.choices[0].message?.content || '';
+    }
+
+    let userMessage: string = prompt;
+    if (fullScreenshotDescription) {
+      const initialRes = await together.chat.completions.create({
+        model: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+        messages: [
+          { role: 'system', content: softwareArchitectPrompt },
+          {
+            role: 'user',
+            content: fullScreenshotDescription + '\n' + prompt,
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 3000,
+      });
+      userMessage = initialRes.choices[0].message?.content ?? prompt;
+    }
+
+    // Insert initial messages using the SERVER ACTION client
+    const systemMessageContent = getMainCodingPrompt(mostSimilarExample);
+
+    const insertedMessages = await handleSupabaseError(
+      supabaseServerClient
+        .from('messages')
+        .insert([
+          {
+            role: 'system',
+            content: systemMessageContent,
+            position: 0,
+            chat_id: chatId,
+          },
+          { role: 'user', content: userMessage, position: 1, chat_id: chatId },
+        ])
+        .select('id, position')
+        .order('position', { ascending: true }),
+      'insert initial messages'
+    );
+
+    // Update the chat title using the SERVER ACTION client
+    await handleSupabaseError(
+      supabaseServerClient // Use server client here too
+        .from('chats')
+        .update({ title })
+        .eq('id', chatId),
+      'update chat title'
+    );
+
+    // Invalidate the cache for the chat page
+    revalidatePath(`/chats/${chatId}`);
+
+    // Extract the user message id from the insert response to avoid a follow-up SELECT
+    const userMessageRow = Array.isArray(insertedMessages)
+      ? insertedMessages.find((m: { position: number }) => m.position === 1)
+      : null;
+
+    if (!userMessageRow?.id) {
+      return { ok: false, code: 'DB_ERROR', message: 'Could not determine the created user message id' };
+    }
+
+    return {
+      ok: true,
+      chatId,
+      lastMessageId: userMessageRow.id as string,
+    };
+  } catch (e: any) {
+    console.error('createChat error:', e);
+    return { ok: false, code: 'UNKNOWN', message: e?.message || 'Unknown error' };
   }
-
-  let userMessage: string = prompt;
-  if (fullScreenshotDescription) {
-    const initialRes = await together.chat.completions.create({
-      model: 'Qwen/Qwen2.5-Coder-32B-Instruct',
-      messages: [
-        { role: 'system', content: softwareArchitectPrompt },
-        {
-          role: 'user',
-          content: fullScreenshotDescription + '\n' + prompt,
-        },
-      ],
-      temperature: 0.2,
-      max_tokens: 3000,
-    });
-    userMessage = initialRes.choices[0].message?.content ?? prompt;
-  }
-
-  // Update chat with title and create initial messages using the SERVER ACTION client
-  const systemMessageContent = getMainCodingPrompt(mostSimilarExample);
-
-  // Insert initial messages using the SERVER ACTION client
-  const insertedMessages = await handleSupabaseError(
-    supabaseServerClient
-      .from('messages')
-      .insert([
-        {
-          role: 'system',
-          content: systemMessageContent,
-          position: 0,
-          chat_id: chatId,
-        },
-        { role: 'user', content: userMessage, position: 1, chat_id: chatId },
-      ])
-      .select('id, position')
-      .order('position', { ascending: true }),
-    'insert initial messages'
-  );
-
-  // Update the chat title using the SERVER ACTION client
-  await handleSupabaseError(
-    supabaseServerClient // Use server client here too
-      .from('chats')
-      .update({ title })
-      .eq('id', chatId),
-    'update chat title'
-  );
-
-  // Invalidate the cache for the chat page
-  revalidatePath(`/chats/${chatId}`);
-
-  // Extract the user message id from the insert response to avoid a follow-up SELECT
-  const userMessageRow = Array.isArray(insertedMessages)
-    ? insertedMessages.find((m: { position: number }) => m.position === 1)
-    : null;
-
-  if (!userMessageRow?.id) {
-    throw new Error('Could not determine the created user message id');
-  }
-
-  return {
-    chatId,
-    lastMessageId: userMessageRow.id as string,
-  };
 }
 
 export async function createMessage(
@@ -326,4 +355,35 @@ export async function deleteChat(chatId: string) {
   if (error) throw new Error(error.message);
 
   revalidatePath('/');
+}
+
+export async function upsertPersonalApiKey(rawKey: string) {
+  const supabase = await getServerSupabase(true);
+  const { data } = await supabase.auth.getUser();
+  const user = data.user;
+  if (!user) throw new Error('AUTH_REQUIRED');
+
+  if (!rawKey || rawKey.trim().length < 10) {
+    throw new Error('INVALID_KEY');
+  }
+
+  const ciphertext = await encryptToBase64(rawKey.trim());
+  const { error } = await supabase
+    .from('user_secrets')
+    .upsert({ user_id: user.id, together_api_key_ciphertext: ciphertext })
+    .eq('user_id', user.id);
+  if (error) throw new Error(error.message);
+}
+
+export async function removePersonalApiKey() {
+  const supabase = await getServerSupabase(true);
+  const { data } = await supabase.auth.getUser();
+  const user = data.user;
+  if (!user) throw new Error('AUTH_REQUIRED');
+
+  const { error } = await supabase
+    .from('user_secrets')
+    .delete()
+    .eq('user_id', user.id);
+  if (error) throw new Error(error.message);
 }
