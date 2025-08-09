@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { getServerSupabase } from '@/lib/supabase-server';
 
 export const contentType = 'image/png';
+export const runtime = 'nodejs';
 
 export default async function Image({
   params,
