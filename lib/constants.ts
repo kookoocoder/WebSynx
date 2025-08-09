@@ -1,15 +1,11 @@
 export const MODELS = [
   {
-    label: 'OpenAI GPT-OSS 120B',
-    value: 'openai/gpt-oss-120b',
-  },
-  {
-    label: 'Claude lite',
-    value: 'Qwen/QwQ-32B',
-  },
-  {
     label: 'OpenAI GPT-OSS 20B',
     value: 'openai/gpt-oss-20b',
+  },
+  {
+    label: 'Qwen/QQ-32B',
+    value: 'Qwen/QwQ-32B',
   },
   {
     label: 'Llama 3.1 405B',

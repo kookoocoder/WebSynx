@@ -889,5 +889,4 @@ function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export const runtime = 'edge';
-export const maxDuration = 45;
+// Use default (Node.js) runtime to keep the server bundle small for Vercel free plan limits
