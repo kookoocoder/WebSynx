@@ -55,11 +55,14 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
         .select('id, title, created_at, user_id')
         .order('created_at', { ascending: false });
 
-      if (currentUser) {
-        query = query.eq('user_id', currentUser.id);
-      } else {
-        query = query.is('user_id', null);
+      if (!currentUser) {
+        // If not signed in, no chats should be fetched (route is server-gated anyway)
+        setChatHistory([]);
+        setLoading(false);
+        return;
       }
+
+      query = query.eq('user_id', currentUser.id);
 
       const { data: chats, error } = await query;
 
@@ -82,7 +85,8 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
     fetchUserAndChats();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async () => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user ?? null);
       await fetchUserAndChats();
     });
     return () => subscription.unsubscribe();
@@ -356,9 +360,7 @@ export default function Sidebar({ initiallyExpanded = true }: SidebarProps) {
                     <div className="text-xs text-gray-400">{chatHistory.length} chats</div>
                   </div>
               </div>
-              ) : (
-                <div className="py-2 text-center text-gray-400 text-xs">Anonymous user</div>
-              )}
+              ) : null}
             </div>
           )}
         </div>

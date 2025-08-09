@@ -40,6 +40,7 @@ export function UserAuthNav() {
     const supabase = getBrowserSupabase();
     try {
       await supabase.auth.signOut();
+      await fetch('/api/auth/set-session', { method: 'DELETE' });
       setIsOpen(false);
       toast({ title: 'Logged Out', description: 'You have been logged out.' });
       router.push('/login');

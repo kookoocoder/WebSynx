@@ -1,20 +1,21 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { getServerSupabase } from '@/lib/supabase-server';
-import MainClientLayout from './layout.client';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function MainLayout({ children }: { children: ReactNode }) {
+export default async function LoginLayout({ children }: { children: ReactNode }) {
   const supabase = await getServerSupabase(false);
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  if (!session) {
-    redirect('/login');
+  if (session) {
+    redirect('/');
   }
 
-  return <MainClientLayout>{children}</MainClientLayout>;
+  return <>{children}</>;
 }
+
+
