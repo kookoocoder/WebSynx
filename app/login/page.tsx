@@ -1,6 +1,5 @@
 'use client';
 
-import { Chrome, Github } from 'lucide-react'; // Keep icons if used for other buttons
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import type React from 'react';
@@ -10,48 +9,93 @@ import { getBrowserSupabase } from '@/lib/supabase-browser';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [isSignup, setIsSignup] = useState(false);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const supabase = getBrowserSupabase();
 
-  const handleEmailLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAuthSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      if (isSignup) {
+        if (!name.trim()) {
+          toast({
+            title: 'Name required',
+            description: 'Please enter your name to create an account.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
 
-      if (error) throw error;
-      if (data?.session) {
-        await fetch('/api/auth/set-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-            expires_at: data.session.expires_at ?? undefined,
-          }),
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            // Store the user's name in user_metadata
+            data: { name },
+          },
         });
+
+        if (error) throw error;
+
+        if (data?.session) {
+          await fetch('/api/auth/set-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              access_token: data.session.access_token,
+              refresh_token: data.session.refresh_token,
+              expires_at: data.session.expires_at ?? undefined,
+            }),
+          });
+        }
+
+        toast({
+          title: 'Signup Successful',
+          description: 'Welcome to WebSynx!',
+        });
+
+        router.push('/');
+        router.refresh();
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        if (data?.session) {
+          await fetch('/api/auth/set-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              access_token: data.session.access_token,
+              refresh_token: data.session.refresh_token,
+              expires_at: data.session.expires_at ?? undefined,
+            }),
+          });
+        }
+
+        toast({
+          title: 'Login Successful',
+          description: 'Welcome back!',
+        });
+
+        router.push('/');
+        router.refresh();
       }
-
-      toast({
-        title: 'Login Successful',
-        description: 'Welcome back!',
-      });
-
-      router.push('/');
-      router.refresh();
     } catch (error: any) {
-      console.error('Login failed:', error);
+      console.error(isSignup ? 'Signup failed:' : 'Login failed:', error);
       toast({
-        title: 'Login Failed',
-        description:
-          error.message || 'Invalid credentials or an unexpected error occurred.',
+        title: isSignup ? 'Signup Failed' : 'Login Failed',
+        description: error.message || 'An unexpected error occurred.',
         variant: 'destructive',
       });
     } finally {
@@ -72,9 +116,29 @@ export default function LoginPage() {
             width={64}
           />
         </div>
-        <h2 className="mb-6 text-center font-bold text-2xl text-white">Login to WebSynx</h2>
+        <h2 className="mb-6 text-center font-bold text-2xl text-white">
+          {isSignup ? 'Create your account' : 'Login to WebSynx'}
+        </h2>
 
-        <form className="space-y-4" onSubmit={handleEmailLogin}>
+        <form className="space-y-4" onSubmit={handleAuthSubmit}>
+          {isSignup && (
+            <div>
+              <label className="mb-1 block font-medium text-gray-300 text-sm" htmlFor="name">
+                Name
+              </label>
+              <input
+                className="w-full rounded-md border-gray-600 bg-gray-700/50 px-3 py-2 text-white focus:border-purple-500 focus:ring-purple-500"
+                id="name"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                placeholder="Jane Doe"
+                required={isSignup}
+                type="text"
+                value={name}
+                autoComplete="name"
+              />
+            </div>
+          )}
+
           <div>
             <label className="mb-1 block font-medium text-gray-300 text-sm" htmlFor="email">
               Email
@@ -87,6 +151,7 @@ export default function LoginPage() {
               required
               type="email"
               value={email}
+              autoComplete="email"
             />
           </div>
           <div>
@@ -94,7 +159,7 @@ export default function LoginPage() {
               Password
             </label>
             <input
-              autoComplete="current-password"
+              autoComplete={isSignup ? 'new-password' : 'current-password'}
               className="w-full rounded-md border-gray-600 bg-gray-700/50 px-3 py-2 text-white focus:border-purple-500 focus:ring-purple-500"
               id="password"
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
@@ -109,9 +174,26 @@ export default function LoginPage() {
             disabled={loading}
             type="submit"
           >
-            {loading ? <span className="animate-pulse">Logging in...</span> : 'Login'}
+            {loading ? (
+              <span className="animate-pulse">
+                {isSignup ? 'Creating account...' : 'Logging in...'}
+              </span>
+            ) : (
+              isSignup ? 'Sign up' : 'Login'
+            )}
           </button>
         </form>
+
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            className="text-sm text-purple-300 hover:text-purple-200 hover:underline disabled:opacity-50"
+            onClick={() => setIsSignup((v) => !v)}
+            disabled={loading}
+          >
+            {isSignup ? 'Already have an account? Log in' : "Don’t have an account? Sign up"}
+          </button>
+        </div>
       </div>
     </div>
   );
