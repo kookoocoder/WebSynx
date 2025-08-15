@@ -3,7 +3,6 @@
 
 import { XCircleIcon } from '@heroicons/react/20/solid';
 import * as Select from '@radix-ui/react-select';
-import Spline from '@splinetool/react-spline';
 import assert from 'assert';
 import {
   CheckIcon,
@@ -27,7 +26,6 @@ import { MODELS, SUGGESTED_PROMPTS } from '@/lib/constants';
 import { getBrowserSupabase } from '@/lib/supabase-browser';
 import { createChat } from './actions';
 import { Context } from './providers';
-import '@splinetool/runtime';
 import { nanoid } from 'nanoid';
 import Image from 'next/image';
 import type { DragEvent } from 'react';
